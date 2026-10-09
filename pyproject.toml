@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dibs"
+version = "0.1.0"
+description = "Call dibs on your edits: keep AI coding agents from overwriting what you changed by hand, and see what is not pushed yet."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Mohammadreza Zare (mrzroot)" }]
+requires-python = ">=3.9"
+keywords = ["ai", "agents", "claude-code", "cursor", "codex", "gemini-cli", "copilot", "aider", "git", "hooks", "mcp"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+  "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://mrzroot.github.io/dibs/"
+Repository = "https://github.com/mrzroot/dibs"
+
+[project.scripts]
+dibs = "dibs.cli:main"
+
+[tool.setuptools]
+packages = ["dibs"]
