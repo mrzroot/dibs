@@ -1,10 +1,29 @@
+<div align="center">
+
 # dibs
 
-**Call dibs on your edits.** dibs keeps AI coding agents (Claude Code, Codex, Cursor, Gemini CLI,
-Copilot, Aider…) from overwriting what you changed by hand, and tells everyone what is not committed
-or pushed yet.
+**Call dibs on your edits.** Stop AI coding agents (Claude Code, Codex, Gemini CLI, Cursor, Copilot,
+aider) from reverting what you changed by hand, and see what is not committed or pushed yet.
 
-[فارسی](README.fa.md) · [Website](https://mrzroot.github.io/dibs/) · MIT · Python 3.9+ · no dependencies
+[![CI](https://github.com/mrzroot/dibs/actions/workflows/ci.yml/badge.svg)](https://github.com/mrzroot/dibs/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mrzroot/dibs?sort=semver)](https://github.com/mrzroot/dibs/releases)
+[![Stars](https://img.shields.io/github/stars/mrzroot/dibs?style=flat&logo=github)](https://github.com/mrzroot/dibs/stargazers)
+![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB)
+![Dependencies: none](https://img.shields.io/badge/dependencies-none-success)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+[**Live demo**](https://mrzroot.github.io/dibs/) · [فارسی](README.fa.md) · [Verified with](#verified-with) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+
+<a href="https://mrzroot.github.io/dibs/"><img src="docs/demo.gif" alt="dibs demo: you change a line, the agent tries to rewrite the file from memory, dibs blocks it and the agent keeps your line" width="860"></a>
+
+</div>
+
+### ⚡ Quickstart
+
+```bash
+pipx install git+https://github.com/mrzroot/dibs@v0.1.1
+cd your-project && dibs init && dibs doctor   # wires your agents' hooks, then checks they will run
+```
 
 ```text
 you:    fix the timeout by hand (10 → 30, add the corporate CA)

@@ -8,6 +8,17 @@ Gemini CLI، Copilot، Aider و…) تغییراتی را که خودتان با
 
 [English](README.md) · [وب‌سایت](https://mrzroot.github.io/dibs/) · مجوز MIT · پایتون ۳٫۹ به بالا · بدون وابستگی
 
+
+<p align="center"><a href="https://mrzroot.github.io/dibs/?lang=fa"><img src="docs/demo.gif" alt="دموی dibs" width="760"></a></p>
+
+**شروع سریع:**
+
+```bash
+pipx install git+https://github.com/mrzroot/dibs@v0.1.1
+cd your-project && dibs init && dibs doctor
+```
+
+
 ## مشکل
 
 شما وسط کار، یک خط را دستی درست می‌کنید (مثلاً timeout را از ۱۰ به ۳۰ می‌رسانید). نوبت بعد از ایجنت
