@@ -144,12 +144,36 @@ def atomic_write(path: Path, data: bytes) -> None:
 
 
 class Lock:
-    """Tiny cross-platform lock file; stale locks (>30 s) are broken."""
+    """Tiny cross-platform lock file.
+
+    A lock is broken when its owner process is gone (POSIX) or when it is older than
+    ``STALE`` seconds, so a crashed hook never wedges dibs but a slow scan of a big
+    repository is not interrupted either.
+    """
+
+    STALE = 120.0
 
     def __init__(self, path: Path, timeout: float):
         self.path = path
         self.timeout = timeout
         self.held = False
+
+    def _stale(self) -> bool:
+        try:
+            age = time.time() - self.path.stat().st_mtime
+            raw = self.path.read_text("ascii", "replace").strip()
+        except OSError:
+            return False
+        if age > self.STALE:
+            return True
+        if os.name == "posix" and raw.isdigit() and age > 1.0:
+            try:
+                os.kill(int(raw), 0)
+            except ProcessLookupError:
+                return True
+            except (PermissionError, OSError):
+                return False
+        return False
 
     def __enter__(self) -> "Lock":
         deadline = time.time() + self.timeout
@@ -161,14 +185,14 @@ class Lock:
                 self.held = True
                 return self
             except FileExistsError:
-                try:
-                    if time.time() - self.path.stat().st_mtime > 30:
+                if self._stale():
+                    try:
                         os.remove(str(self.path))
-                        continue
-                except OSError:
-                    pass
+                    except OSError:
+                        pass
+                    continue
                 if time.time() > deadline:
-                    raise TimeoutError(f"dibs: could not lock {self.path}")
+                    raise TimeoutError(f"dibs: could not lock {self.path} (another dibs process is busy)")
                 time.sleep(0.03)
 
     def __exit__(self, *exc: Any) -> None:

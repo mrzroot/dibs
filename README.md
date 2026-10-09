@@ -55,15 +55,16 @@ Claude Code and the others report a failing hook and carry on; the git pre-commi
 | Agent | How dibs plugs in | Brief | Guard before edit | Records edits |
 |---|---|---|---|---|
 | Claude Code | `.claude/settings.json` hooks: UserPromptSubmit, PreToolUse, PostToolUse, Stop | yes | asks you | Edit, Write, MultiEdit, Bash |
-| Codex CLI | `.codex/hooks.json` (trust once with `/hooks`) + AGENTS.md | yes | denies | apply_patch, Bash |
-| Cursor | `.cursor/hooks.json` + `.cursor/rules/dibs.mdc` | after the agent's first tool call | denies | file edits, shell |
-| Gemini CLI | `.gemini/settings.json` hooks: BeforeAgent, BeforeTool, AfterTool, AfterAgent | yes | denies | write_file, replace, shell |
+| Codex CLI | `.codex/hooks.json` (trust once: start `codex`, pick "Trust all and continue") + AGENTS.md | yes | denies | apply_patch, exec_command / shell |
+| Cursor | `.cursor/hooks.json` + `.cursor/rules/dibs.mdc` | with the prompt (`additional_context`), repeated after the first tool call | denies | Write, Delete, Shell |
+| Gemini CLI | `.gemini/settings.json` hooks: BeforeAgent, BeforeTool, AfterTool, AfterAgent (trusted folders only) | yes | denies | write_file, replace, shell |
 | Copilot (VS Code) | `.vscode/mcp.json` MCP server + `.github/copilot-instructions.md` | via `dibs_brief` tool | via `dibs_check_edit` tool | at `dibs_done` |
-| Aider and others | AGENTS.md block, or `dibs run --agent aider -- aider` | printed at start | after the fact | whole run |
+| Aider and others | AGENTS.md block, or `dibs run --agent aider -- aider` | printed at start (aider: passed with `--read`) | after the fact | whole run |
 | Any MCP client | `dibs mcp --agent NAME` | `dibs_brief` | `dibs_check_edit` | `dibs_done` |
 
 Plus a git **pre-commit** hook (`dibs guard --pre-commit`). `dibs uninstall` removes all of it and
-leaves your own hooks alone.
+leaves your own hooks alone. Run `dibs doctor` to check that each agent will really run them
+(dibs on PATH, Codex hook trust, Gemini folder trust, disabled hooks, a pre-commit `exec` that would skip dibs).
 
 ## A turn, step by step
 
@@ -106,6 +107,7 @@ dibs brief --agent A [--peek]    start a turn for an agent without hooks and pri
 dibs done --agent A              end that turn and attribute its changes
 dibs run --agent A -- CMD …      run a whole agent session as one turn
 dibs watch [--interval 2]        record your edits continuously, with exact timestamps
+dibs doctor [--json]             check that every wired agent will really run the hooks
 dibs record [FILES] [--actor A]  attribute current changes now
 dibs mcp [--agent A]             MCP server on stdio
 dibs guard FILE --new NEWFILE    check a proposed version from scripts
@@ -115,6 +117,38 @@ dibs uninstall [--purge]
 
 Settings can also live in a committed `.dibs.json`. `DIBS_GUARD=warn` overrides the guard for one session;
 `DIBS_ALLOW_REVERTS=1 git commit` skips the pre-commit check once.
+
+## Verified with
+
+Tested on Linux (October 2026) with the **real agent CLIs** and a local mock model
+([`scripts/e2e`](scripts/e2e)): the CLI, its config parser, hook runner and tools are real; only the
+model's replies are scripted. Scenario: agent writes a file → you edit a line by hand → the agent
+rewrites the file from memory → dibs blocks or flags it → `dibs restore` / pre-commit guard.
+
+| Agent | Version | Hook config accepted | Guard before the edit | Shell-revert detection | Brief reaches the model | How it was run |
+|---|---|---|---|---|---|---|
+| Claude Code | 2.1.295 | ✅ | ✅ `ask` (rejected in `-p`; dialog in the TUI, also in accept-edits mode) | ✅ | ✅ | `claude -p` 10/10 checks; interactive TUI in tmux |
+| Codex CLI | 0.162.0 | ✅ | ✅ `deny` on `apply_patch` (reason reaches the model) | ✅ `exec_command` | ✅ | `codex exec` 7/7; TUI "Trust all and continue" flow |
+| Gemini CLI | 0.63.0 | ✅ (trusted folder only) | ✅ `write_file` / `replace` | ✅ `run_shell_command` | ✅ | `gemini -p` 8/8 |
+| aider | 0.86.2 | – (no hooks) | ✗ after the run only | ✅ after the run | ✅ via `--read` | `dibs run --agent aider` 3/3 |
+| Cursor agent | 2026.10.01 | payloads and output validators read from the installed CLI's source | unit-tested only | unit-tested only | unit-tested only | needs a Cursor login to run a model |
+| GitHub Copilot | – | not run | – (MCP + instructions, not forced) | – | – | needs VS Code + a GitHub Copilot account |
+
+Not verified, because it needs an account: how real models (Claude, GPT, Gemini, Cursor's models)
+react to the dibs messages; Cursor end to end (Cursor account); Copilot (VS Code + Copilot
+subscription); Claude Code's subscription login (the API-key path was used).
+
+Things the real CLIs taught us, now handled or reported by `dibs doctor`:
+
+- **Codex** skips untrusted project hooks without a word. Start `codex` in the repo once and pick
+  "Trust all and continue" (or `/hooks`). Codex does not support `ask`, so dibs denies.
+- **Gemini CLI** ignores `.gemini/settings.json` (hooks included) unless the folder is trusted.
+- **Claude Code** shows its own overwrite dialog for `ask`, but not the hook's reason; dibs adds a
+  `systemMessage` so you know why. Claude Code also refuses a `Write` to a file it has not read.
+- **Cursor** also runs `.claude/settings.json` hooks; dibs recognises Cursor's payloads so the work is
+  not credited to Claude, and lets its own Cursor hooks handle the event when both are installed.
+- **aider** commits mid-run with `--no-verify`, so the pre-commit guard cannot stop it; `dibs run`
+  reports the revert when aider exits and `dibs restore` fixes it.
 
 ## How attribution works
 
@@ -134,14 +168,14 @@ and the journal marks those edits as approved overrides.
 
 ## Limits
 
-- Hooks are the agents' own feature and change between versions. The integrations follow the
-  documented hook formats as of October 2026; Cursor's edit-tool input is not fully documented, so its
-  guard is best-effort (its after-the-fact detection does not depend on it).
+- Hooks are the agents' own feature and change between versions. See "Verified with" for the exact
+  versions tested; run `dibs doctor` after upgrading an agent.
 - If you edit a file while an agent's shell command runs, that change is attributed to the agent.
 - Line matching ignores whitespace and only looks at whole lines; a revert that rewrites a line into
   something new is not a "revert" to dibs.
 - `dibs blame` covers changes since dibs started; older lines show `·`.
-- Large files (> 2 MB) and binaries are tracked by hash only.
+- Large files (> 2 MB) and binaries are tracked by hash only. On a 30,000-file repository `dibs init`
+  takes ~1.2 s and each hook 0.1–0.4 s (`scripts/bench.py`).
 
 ## How it differs from similar tools
 

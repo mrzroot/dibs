@@ -265,18 +265,33 @@ def cmd_run(a: argparse.Namespace) -> int:
     d = Dibs()
     brief = d.turn_start(a.agent)
     bf = d.repo.state_dir / f"brief-{a.agent}.md"
-    bf.write_text(brief + "\n", "utf-8")
+    bf.write_text((brief or "[dibs] No changes by the human or other agents since your last turn.") + "\n", "utf-8")
     if brief:
         print(brief, file=sys.stderr)
+    sys.stderr.flush()
+    sys.stdout.flush()
+    exe = os.path.basename(cmd[0]).lower()
+    if brief and exe in ("aider", "aider.exe") and "--read" not in cmd:
+        # aider has no hooks, but it accepts read-only context files: hand it the brief that way
+        cmd = [cmd[0], "--read", str(bf)] + list(cmd[1:])
     env = dict(os.environ, DIBS_AGENT=a.agent, DIBS_BRIEF_FILE=str(bf))
     try:
         code = subprocess.call(cmd, env=env)
     except FileNotFoundError:
         print(f"dibs: command not found: {cmd[0]}", file=sys.stderr)
         code = 127
+    except KeyboardInterrupt:
+        code = 130
     finally:
         evs = d.turn_end(a.agent, full=True)
         print(f"[dibs] {len(evs)} change(s) attributed to {a.agent}.", file=sys.stderr)
+        bad = [e for e in evs if e.get("reverts")]
+        for e in bad:
+            ks = (e["reverts"]["dropped"] + e["reverts"]["resurrected"])[:3]
+            print(warn(f"{a.agent} undid lines you edited by hand in {e['path']} (#{e['seq']}): " + " | ".join(ks)),
+                  file=sys.stderr)
+        if bad:
+            print(f"  → dibs restore {bad[0]['path']}    (or `dibs ack` if it was wanted)", file=sys.stderr)
     return code
 
 
@@ -290,19 +305,59 @@ def cmd_record(a: argparse.Namespace) -> int:
 
 
 def cmd_watch(a: argparse.Namespace) -> int:
+    """Poll the tree and record changes made outside agent turns as the human's, with exact times.
+
+    Robust for long runs: errors are reported once and retried, a busy lock is skipped, a stale
+    "active" agent (crashed without its stop hook) stops pausing the watcher, and the poll interval
+    backs off on big repositories so a scan never takes more than ~1/3 of the time.
+    """
     d = Dibs()
     d.ensure()
-    print(f"dibs watching {d.repo.root} (Ctrl-C to stop)")
+    print(f"dibs watching {d.repo.root} (Ctrl-C to stop)", flush=True)
+    interval = max(0.2, float(a.interval))
+    last_err = None
+    rounds = 0
     try:
         while True:
-            st = d.load_state()
-            busy = [n for n, ag in st["agents"].items() if ag.get("active") and time.time() - ag.get("started", 0) < 3 * 3600]
-            if not busy:  # during an agent turn the hooks decide who changed what
-                for e in d.record("human"):
-                    _print_event(e)
-            time.sleep(a.interval)
+            t0 = time.time()
+            try:
+                if not d.repo.state_dir.parent.exists():
+                    print(warn("repository is gone; stopping"), file=sys.stderr)
+                    return 1
+                st = d.load_state()
+                busy = [n for n, ag in st["agents"].items()
+                        if ag.get("active") and time.time() - ag.get("started", 0) < float(a.agent_timeout)]
+                if not busy:  # during an agent turn the hooks decide who changed what
+                    for e in d.record("human"):
+                        _print_event(e)
+                    sys.stdout.flush()
+                last_err = None
+            except TimeoutError:
+                pass  # a hook holds the lock; try again next round
+            except Exception as ex:  # keep watching; report each distinct error once
+                msg = f"{type(ex).__name__}: {ex}"
+                if msg != last_err:
+                    print(warn(f"watch error (will retry): {msg}"), file=sys.stderr, flush=True)
+                    last_err = msg
+            rounds += 1
+            if a.rounds and rounds >= a.rounds:
+                return 0
+            took = time.time() - t0
+            time.sleep(max(interval, took * 2))
     except KeyboardInterrupt:
         return 0
+
+
+def cmd_doctor(a: argparse.Namespace) -> int:
+    from .doctor import run
+    checks = run(Repo.discover())
+    if a.json:
+        print(json.dumps([{"level": l, "message": m} for l, m in checks], indent=2))
+    else:
+        marks = {"ok": c("✓", "32"), "warn": c("!", "33"), "fail": c("✗", "31"), "info": c("·", "2")}
+        for level, msg in checks:
+            print(f"  {marks[level]} {msg}")
+    return 1 if any(l == "fail" for l, _ in checks) else 0
 
 
 def cmd_hook(a: argparse.Namespace) -> int:
@@ -452,7 +507,14 @@ def parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("watch", help="record your edits continuously with exact timestamps")
     s.add_argument("--interval", type=float, default=2.0)
+    s.add_argument("--agent-timeout", type=float, default=3 * 3600,
+                   help="treat an agent turn older than this many seconds as finished (default 3 h)")
+    s.add_argument("--rounds", type=int, default=0, help=argparse.SUPPRESS)
     s.set_defaults(fn=cmd_watch)
+
+    s = sub.add_parser("doctor", help="check that each agent will really run the dibs hooks")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(fn=cmd_doctor)
 
     s = sub.add_parser("hook", help="entry point for agent hooks (reads JSON on stdin)")
     s.add_argument("tool", choices=["claude", "codex", "cursor", "gemini"])

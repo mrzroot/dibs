@@ -89,7 +89,8 @@ def scan(repo: Repo, old: Manifest, paths: Optional[Iterable[str]] = None,
     """Return (new manifest, freshly read contents).
 
     With ``paths`` only those files are re-checked (and always re-hashed);
-    everything else is carried over from ``old``.
+    everything else is carried over from ``old``. Unchanged files (same size and
+    mtime) are not read, so a full scan costs one ``stat`` per file.
     """
     data_cache: Dict[str, bytes] = {}
     if paths is not None:
@@ -99,14 +100,16 @@ def scan(repo: Repo, old: Manifest, paths: Optional[Iterable[str]] = None,
     else:
         new = {}
         targets = list_files(repo)
+    root = str(repo.root) + os.sep
+    racy_after = time.time_ns() - 2_000_000_000
+    _stat, _isreg = os.stat, stat.S_ISREG
     for rel in targets:
-        full = repo.root / rel
         try:
-            st = os.stat(full)
-        except OSError:
+            st = _stat(root + rel)
+        except (OSError, ValueError):
             new.pop(rel, None)
             continue
-        if not stat.S_ISREG(st.st_mode):
+        if not _isreg(st.st_mode):
             new.pop(rel, None)
             continue
         prev = old.get(rel)
@@ -118,7 +121,22 @@ def scan(repo: Repo, old: Manifest, paths: Optional[Iterable[str]] = None,
             new.pop(rel, None)
             continue
         # "racy" entries (modified within the last 2 s) are re-hashed next time, like git's index
-        racy = st.st_mtime_ns >= time.time_ns() - 2_000_000_000
+        racy = st.st_mtime_ns >= racy_after
         new[rel] = [blob_id(data), len(data), 0 if racy else st.st_mtime_ns]
         data_cache[rel] = data
     return new, data_cache
+
+
+def git_missing(repo: Repo, shas: Iterable[str]) -> set:
+    """The subset of ``shas`` that git's object database does not have (one git call)."""
+    shas = list(dict.fromkeys(shas))
+    if not shas or not repo.is_git:
+        return set(shas)
+    r = run_git(["cat-file", "--batch-check"], repo.root, input=("\n".join(shas) + "\n").encode())
+    if r is None or r.returncode != 0:
+        return set(shas)
+    missing = set()
+    for line in r.stdout.decode("utf-8", "replace").splitlines():
+        if line.endswith(" missing"):
+            missing.add(line.split()[0])
+    return missing

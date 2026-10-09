@@ -193,8 +193,19 @@ def _deny(c: Ctx, msg: str, mode: str) -> Tuple[Dict[str, Any], int]:
                 "agent_message": msg}, 0
     if c.tool == "gemini":
         return {"decision": "deny", "reason": msg}, 0
-    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": mode,
-                                   "permissionDecisionReason": msg}}, 0
+    out: Dict[str, Any] = {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": mode,
+                                                  "permissionDecisionReason": msg}}
+    if c.tool == "claude" and mode == "ask":
+        # The permission dialog does not show the hook's reason, so tell the user why it appeared.
+        out["systemMessage"] = user_summary(c, msg)
+    return out, 0
+
+
+def user_summary(c: "Ctx", msg: str) -> str:
+    lines = [l.strip() for l in msg.splitlines() if l.startswith("  ")][:3]
+    return ("dibs: this edit would undo lines you changed by hand"
+            + (": " + " | ".join(lines) if lines else "")
+            + ". Answer No to keep your version (or run `dibs allow <file>` if the change is wanted).")
 
 
 def handle(tool: str, event: str, payload: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
@@ -206,7 +217,9 @@ def handle(tool: str, event: str, payload: Dict[str, Any]) -> Tuple[Dict[str, An
     if ev in ("userpromptsubmit", "beforeagent", "beforesubmitprompt"):
         brief = d.turn_start(c.agent, c.session)
         if tool == "cursor":
-            return {"continue": True}, 0
+            # Cursor 2026.x passes additional_context from beforeSubmitPrompt to the model; older
+            # builds ignore it, so the brief is also handed over once at the first postToolUse.
+            return ({"continue": True, "additional_context": brief} if brief else {"continue": True}), 0
         return _ctx_out(tool, "BeforeAgent" if tool == "gemini" else "UserPromptSubmit", brief), 0
 
     # before an edit -------------------------------------------------------
@@ -228,7 +241,8 @@ def handle(tool: str, event: str, payload: Dict[str, Any]) -> Tuple[Dict[str, An
         if tool == "cursor" and ev == "posttooluse":
             pending = d.take_pending_brief(c.agent)
             if pending:
-                notes.append(pending)
+                notes.append("[dibs] (repeating the turn brief in case your client did not show it with the prompt)\n"
+                             + pending)
         if ev == "afterfileedit":
             paths = c.edit_paths()
             evs = d.touch(c.agent, paths if paths is not None else None, c.session) if paths != [] else []
@@ -264,11 +278,36 @@ def neutral(tool: str, event: str) -> Dict[str, Any]:
     return {}
 
 
+def from_cursor(payload: Dict[str, Any]) -> bool:
+    """Cursor also runs hooks from .claude/settings.json ("third-party hooks"); spot its payloads."""
+    return bool(payload.get("cursor_version") or os.environ.get("CURSOR_VERSION"))
+
+
+def cursor_has_own_hooks(cwd: Optional[str]) -> bool:
+    try:
+        repo = Repo.discover(cwd)
+        data = json.loads((repo.root / ".cursor" / "hooks.json").read_text("utf-8"))
+        return "dibs" in json.dumps(data.get("hooks", {}))
+    except Exception:
+        return False
+
+
+CURSOR_EVENTS = {"userpromptsubmit": "beforeSubmitPrompt", "pretooluse": "preToolUse", "posttooluse": "postToolUse",
+                 "stop": "stop", "sessionend": "sessionEnd"}
+
+
 def main(tool: str, event: str, stdin_text: str) -> Tuple[str, int]:
     try:
         payload = json.loads(stdin_text) if stdin_text.strip() else {}
         if not isinstance(payload, dict):
             payload = {}
+        if tool == "claude" and from_cursor(payload):
+            # A Claude Code hook that Cursor is running: never attribute Cursor's work to Claude.
+            cwd = payload.get("cwd") or (payload.get("workspace_roots") or [None])[0]
+            if cursor_has_own_hooks(cwd):
+                return json.dumps({}), 0  # dibs' Cursor hooks handle this event
+            tool = "cursor"
+            event = CURSOR_EVENTS.get(event.lower(), payload.get("hook_event_name") or event)
         out, code = handle(tool, event, payload)
     except Exception:  # fail open, but leave a trace
         try:

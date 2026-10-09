@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from . import textdiff as td
 from .repo import HUMANISH, Repo, atomic_write, run_git
-from .store import Store, is_binary, read_file, scan
+from .store import Store, git_missing, is_binary, read_file, scan
 from .sync import sync_line, sync_status
 
 MAX_EVENT_LINES = 400
@@ -83,20 +83,61 @@ class Dibs:
     def save_state(self, st: Dict[str, Any]) -> None:
         atomic_write(self.repo.state_file, json.dumps(st, separators=(",", ":")).encode())
 
-    def events(self) -> List[Dict[str, Any]]:
-        out = []
+    def events(self, min_seq: Optional[int] = None, min_ts: Optional[float] = None) -> List[Dict[str, Any]]:
+        """Journal events in order. With ``min_seq``/``min_ts`` only the tail is read (seq > min_seq,
+        ts >= min_ts), so hooks stay fast however long the journal grows."""
+        if min_seq is None and min_ts is None:
+            out = []
+            try:
+                with open(self.repo.journal_file, "r", encoding="utf-8") as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if line:
+                            try:
+                                out.append(json.loads(line))
+                            except ValueError:
+                                pass
+            except FileNotFoundError:
+                pass
+            return out
+        rev: List[Dict[str, Any]] = []
+        for e in self._read_reverse():
+            if min_seq is not None and e.get("seq", 0) <= min_seq:
+                break
+            if min_ts is not None and e.get("ts", 0) < min_ts - 300:  # small slack for clock jitter
+                break
+            if min_ts is None or e.get("ts", 0) >= min_ts:
+                rev.append(e)
+        rev.reverse()
+        return rev
+
+    def _read_reverse(self, block: int = 1 << 16):
         try:
-            with open(self.repo.journal_file, "r", encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if line:
+            fh = open(self.repo.journal_file, "rb")
+        except FileNotFoundError:
+            return
+        with fh:
+            fh.seek(0, os.SEEK_END)
+            pos = fh.tell()
+            rest = b""
+            while pos > 0:
+                n = min(block, pos)
+                pos -= n
+                fh.seek(pos)
+                chunk = fh.read(n) + rest
+                lines = chunk.split(b"\n")
+                rest = lines[0]
+                for line in reversed(lines[1:]):
+                    if line.strip():
                         try:
-                            out.append(json.loads(line))
+                            yield json.loads(line.decode("utf-8"))
                         except ValueError:
                             pass
-        except FileNotFoundError:
-            pass
-        return out
+            if rest.strip():
+                try:
+                    yield json.loads(rest.decode("utf-8"))
+                except ValueError:
+                    pass
 
     def _append(self, evs: List[Dict[str, Any]]) -> None:
         if not evs:
@@ -125,8 +166,11 @@ class Dibs:
                 for p in parts:
                     if len(p) > 3:
                         dirty.add(p[3:])
+        # Store every file git can't give back later (dirty, untracked, or stored with filters such as CRLF).
+        missing = git_missing(self.repo, (manifest[rel][0] for rel in data)) if self.repo.is_git else None
         for rel, blob in data.items():
-            if len(blob) <= maxb and (dirty is None or rel in dirty or not self._git_has(manifest[rel][0])):
+            if len(blob) <= maxb and (missing is None or (dirty is not None and rel in dirty)
+                                      or manifest[rel][0] in missing):
                 self.store.put(blob)
         st = self.load_state()
         st["created"] = now()
@@ -153,10 +197,6 @@ class Dibs:
                 return
         st["manifest"] = manifest
         self.save_state(st)
-
-    def _git_has(self, sha: str) -> bool:
-        r = run_git(["cat-file", "-e", sha], self.repo.root)
-        return r is not None and r.returncode == 0
 
     # -------------------------------------------------------------- recording
     def _record(self, st: Dict[str, Any], actor: str, paths: Optional[Iterable[str]] = None,
@@ -205,7 +245,7 @@ class Dibs:
                         ev["override"] = True
                     else:
                         if history is None:
-                            history = self.events()
+                            history = self.events(min_ts=t - float(self.cfg["protect_hours"]) * 3600)
                         added, removed = self._protected(history + evs, rel, t)
                         v = self._verdict(rel, bl, plus, minus, added, removed)
                         if v.reverts:
@@ -304,11 +344,12 @@ class Dibs:
 
     # ------------------------------------------------------------------ brief
     def changes_since(self, agent: str, since: Optional[int], st: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        evs = [e for e in self.events() if e.get("kind") == "change" and e["actor"] != agent]
         if since is None:
             cutoff = now() - float(self.cfg["brief_window_hours"]) * 3600
-            return [e for e in evs if e["ts"] >= cutoff]
-        return [e for e in evs if e["seq"] > since]
+            evs = self.events(min_ts=cutoff)
+        else:
+            evs = self.events(min_seq=since)
+        return [e for e in evs if e.get("kind") == "change" and e["actor"] != agent]
 
     def render_brief(self, agent: str, since: Optional[int], st: Optional[Dict[str, Any]] = None,
                      include_sync: Optional[bool] = None) -> str:
@@ -424,7 +465,7 @@ class Dibs:
         old_lines = td.to_lines(cur) or []
         if new_text is not None:
             plus, minus = td.line_delta(old_lines, new_text.splitlines())
-        added, removed = self._protected(self.events(), rel, t)
+        added, removed = self._protected(self.events(min_ts=t - float(self.cfg["protect_hours"]) * 3600), rel, t)
         # human edits not recorded yet (made since the last scan) count too
         rec = (st["manifest"].get(rel) or [None])[0]
         if cur is not None and rec and self.store.get(rec) is not None:
@@ -453,7 +494,7 @@ class Dibs:
         st = self.load_state()
         if not st["pending_reverts"]:
             return []
-        by_seq = {e["seq"]: e for e in self.events() if e.get("kind") == "change"}
+        by_seq = {e["seq"]: e for e in self.events(min_seq=min(st["pending_reverts"]) - 1) if e.get("kind") == "change"}
         out = []
         keep = []
         cache: Dict[str, Any] = {}

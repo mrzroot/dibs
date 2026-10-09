@@ -1,0 +1,37 @@
+import sys; sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
+from lib import *
+R = "/tmp/e2e-aider"; newrepo(R)
+sh("dibs init --agents aider", cwd=R)
+sh("git add -A && git commit -qm 'dibs init'", cwd=R)
+E = dict(ENV, OPENAI_API_BASE="http://127.0.0.1:18800/v1", OPENAI_API_KEY="x", AIDER_ANALYTICS="false", HOME="/tmp/aider-home")
+os.makedirs("/tmp/aider-home", exist_ok=True)
+def whole(content): return {"text": "api.py\n```python\n" + content + "```\n"}
+def aider(msg, steps):
+    script(steps)
+    r = sh(["dibs", "run", "--agent", "aider", "--", "aider", "--model", "openai/mock", "--edit-format", "whole", "--yes-always",
+            "--no-check-update", "--no-show-model-warnings", "--no-pretty", "--no-stream", "--weak-model", "openai/mock",
+            "--message", msg, "api.py"], cwd=R, env=E, quiet=True)
+    print("  rc", r.returncode, "|", "\n  ".join((r.stdout + r.stderr).strip().splitlines()[-14:]))
+    return r
+open(f"{R}/api.py", "w").write("")
+sh("git add api.py && git commit -qm 'empty api'", cwd=R)
+clear_log()
+print("== turn 1: aider writes api.py")
+aider("create api.py", [whole(V1), {"text": "feat: add api.py"}])
+ok(open(f"{R}/api.py").read() == V1, "aider wrote api.py")
+sh("git log --oneline -3", cwd=R)
+print("== human edits"); human_edit(R)
+clear_log()
+print("== turn 2: aider rewrites from memory")
+r = aider("add logging", [whole(V2), {"text": "feat: add logging"}])
+show(R)
+sh("git log --oneline -4; git status --short", cwd=R)
+st = sh("NO_COLOR=1 dibs status", cwd=R)
+ok("Reverted human lines" in st.stdout, "dibs status lists aider's revert")
+sh("dibs restore api.py", cwd=R)
+s = open(f"{R}/api.py").read()
+ok(HUMAN in s and "import logging" in s, "restore put back the human line, kept aider's logging")
+sh("NO_COLOR=1 dibs log -n 20", cwd=R)
+sh("cat .git/dibs/hook-errors.log", cwd=R)
+for e in log(): print("REQ", e["path"], json.dumps(e["body"].get("messages", [{}])[-1])[:200])
+print("RESULTS", sum(r for _, r in RESULTS), "/", len(RESULTS))

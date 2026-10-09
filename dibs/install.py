@@ -143,7 +143,7 @@ def init(repo: Repo, agents: List[str], base: str = "dibs", git_hook: bool = Tru
             "PreToolUse": "apply_patch",
             "PostToolUse": "apply_patch|Bash",
             "Stop": None}))
-        done.append(".codex/hooks.json (Codex hooks; trust them once with /hooks)")
+        done.append(".codex/hooks.json (Codex hooks: start `codex` here once and pick \"Trust all and continue\", or review them with /hooks)")
     if "gemini" in agents:
         p = root / ".gemini" / "settings.json"
         _merge_nested(p, _nested(base, "gemini", {
@@ -151,7 +151,7 @@ def init(repo: Repo, agents: List[str], base: str = "dibs", git_hook: bool = Tru
             "BeforeTool": "write_file|replace",
             "AfterTool": "write_file|replace|run_shell_command",
             "AfterAgent": "*"}, named=True))
-        done.append(".gemini/settings.json (Gemini CLI hooks)")
+        done.append(".gemini/settings.json (Gemini CLI hooks: Gemini only runs them in a trusted folder)")
     if "cursor" in agents:
         p = root / ".cursor" / "hooks.json"
         data = _load_json(p)
@@ -161,7 +161,7 @@ def init(repo: Repo, agents: List[str], base: str = "dibs", git_hook: bool = Tru
             hooks[ev] = [h for h in hooks[ev] if not _is_dibs(h.get("command"))]
             if not hooks[ev]:
                 del hooks[ev]
-        spec = {"beforeSubmitPrompt": None, "preToolUse": "Write|Delete", "postToolUse": None,
+        spec = {"beforeSubmitPrompt": None, "preToolUse": "Write|Delete", "postToolUse": "Write|Delete|Shell",
                 "afterFileEdit": None, "stop": None}
         for ev, matcher in spec.items():
             h: Dict[str, Any] = {"command": _hook_cmd(base, "cursor", ev)}
@@ -195,8 +195,15 @@ def init(repo: Repo, agents: List[str], base: str = "dibs", git_hook: bool = Tru
                     "  # dibs\n")
             old = f.read_text("utf-8") if f.exists() else "#!/bin/sh\n"
             if "# dibs" not in old:
+                # Put the check right after the shebang: hooks written by other tools often end with
+                # `exec ...`, and anything appended after that line would never run.
+                lines = old.splitlines(True)
+                if lines and lines[0].startswith("#!"):
+                    new_text = lines[0].rstrip("\n") + "\n" + line + "".join(lines[1:])
+                else:
+                    new_text = "#!/bin/sh\n" + line + old
                 f.parent.mkdir(parents=True, exist_ok=True)
-                f.write_text(old.rstrip("\n") + "\n" + line, "utf-8")
+                f.write_text(new_text, "utf-8")
                 f.chmod(f.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             done.append(f"{os.path.relpath(f, root)} (revert check before each commit)")
     return done

@@ -97,7 +97,7 @@ def test_cursor_flow_brief_after_first_tool(repo):
     hook("cursor", "stop", repo, **roots)
     edit(repo / "app.py", "timeout = 10", "timeout = 30  # slow network")
     out, _ = hook("cursor", "beforeSubmitPrompt", repo, prompt="x", **roots)
-    assert out == {"continue": True}
+    assert out["continue"] is True and "slow network" in out["additional_context"]
     out, _ = hook("cursor", "postToolUse", repo, tool_name="Read", tool_input={"file_path": "app.py"}, **roots)
     assert "slow network" in out["additional_context"]
     out, _ = hook("cursor", "postToolUse", repo, tool_name="Read", tool_input={}, **roots)
