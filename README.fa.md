@@ -39,9 +39,9 @@ Gemini CLI، Copilot، Aider و…) تغییراتی را که خودتان با
 هنوز در PyPI منتشر نشده است؛ از گیت‌هاب نصب کنید:
 
 ```bash
-pipx install git+https://github.com/mrzroot/dibs@v0.1.0
+pipx install git+https://github.com/mrzroot/dibs@v0.1.1
 # یا
-uv tool install git+https://github.com/mrzroot/dibs@v0.1.0
+uv tool install git+https://github.com/mrzroot/dibs@v0.1.1
 ```
 
 سپس در هر مخزن:

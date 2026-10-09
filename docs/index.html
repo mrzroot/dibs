@@ -1,193 +1,188 @@
 <!doctype html>
-<html lang="en" data-lang="en" dir="ltr">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>dibs — call dibs on your edits</title>
-<meta name="description" content="dibs keeps AI coding agents (Claude Code, Codex, Cursor, Gemini CLI, Copilot, Aider) from overwriting what you changed by hand, and tells everyone what is not committed or pushed yet. Open source, MIT.">
-<meta name="theme-color" content="#f4f1e8">
-<link rel="canonical" href="https://mrzroot.github.io/dibs/">
-<meta property="og:type" content="website">
+<title>dibs — you typed it, the agent can't take it back</title>
+<meta name="description" content="dibs keeps AI coding agents (Claude Code, Codex, Gemini CLI, Cursor, Copilot, aider) from reverting the lines you changed by hand. Play the live human-vs-agent editor.">
 <meta property="og:title" content="dibs — call dibs on your edits">
-<meta property="og:description" content="Stop AI coding agents from reverting your manual edits. Turn briefs, a revert guard, restore, and git sync warnings for Claude Code, Codex, Cursor, Gemini CLI, Copilot and Aider.">
+<meta property="og:description" content="Type a line. Watch an AI agent try to rewrite it from memory. Watch dibs stop it.">
+<meta property="og:type" content="website">
 <meta property="og:url" content="https://mrzroot.github.io/dibs/">
+<meta name="theme-color" content="#0D0B12">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="preload" href="fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin>
-<script>(function(){var d=document.documentElement,l='en';try{l=new URLSearchParams(location.search).get('lang')||localStorage.getItem('mrz-lang')||'en'}catch(e){}if(l==='fa'){d.lang='fa';d.dir='rtl';d.setAttribute('data-lang','fa')}})()</script>
+<link rel="preload" href="fonts/dela.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/jbmono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="site.css">
 </head>
 <body>
-<header class="top"><div class="wrap">
-<a class="logo" href="./"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#111"/><path d="M14 40c6-3 30-3 36 0" stroke="#ff2e88" stroke-width="7" stroke-linecap="round" fill="none"/><text x="32" y="38" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="30" fill="#f4f1e8">d!</text></svg>dibs</a>
-<nav>
-<a href="#problem"><span lang="en">Problem</span><span lang="fa">مشکل</span></a>
-<a href="#how"><span lang="en">How it works</span><span lang="fa">چطور کار می‌کند</span></a>
-<a href="#try" class="opt"><span lang="en">Try the guard</span><span lang="fa">امتحانش کنید</span></a>
-<a href="#agents" class="opt"><span lang="en">Agents</span><span lang="fa">ایجنت‌ها</span></a>
-<a href="#start"><span lang="en">Install</span><span lang="fa">نصب</span></a>
-</nav>
-<div class="lang" role="group" aria-label="Language"><button data-set="en" aria-pressed="true">EN</button><button data-set="fa" aria-pressed="false">فا</button></div>
-<a class="gh" href="https://github.com/mrzroot/dibs"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a>
-</div></header>
+<a class="skip" href="#arena" data-i="skip">Skip to the demo</a>
+
+<header class="top">
+  <a class="brand" href="#" aria-label="dibs home"><span class="brand-y">di</span><span class="brand-v">bs</span></a>
+  <nav class="top-nav">
+    <a href="#arena" data-i="nav_demo">Demo</a>
+    <a href="#beats" data-i="nav_how">How</a>
+    <a href="#verified" data-i="nav_verified">Verified</a>
+    <a href="#install" data-i="nav_install">Install</a>
+    <a href="https://github.com/mrzroot/dibs" rel="noopener">GitHub</a>
+    <button class="lang" id="lang" type="button" aria-label="Switch language">فا</button>
+  </nav>
+</header>
 
 <main>
-<section class="hero"><div class="wrap grid">
-<div>
-<span class="kicker"><i></i><span lang="en">v0.1.0 · MIT · zero dependencies</span><span lang="fa">نسخهٔ ۰٫۱٫۰ · MIT · بدون وابستگی</span></span>
-<h1 lang="en">Call <span class="mark">dibs</span> on your&nbsp;edits.</h1>
-<h1 lang="fa">ویرایش‌هایتان را <span class="mark">رزرو</span> کنید.</h1>
-<p class="lead" lang="en">You fix a line by hand. Next turn, your AI agent quietly puts the old one back. <b>dibs</b> tells every agent what you changed since its last turn, stops edits that would undo your lines, restores them if one slips through, and keeps saying what is still not committed or pushed.</p>
-<p class="lead" lang="fa">یک خط را دستی درست می‌کنید و ایجنت هوش مصنوعی در نوبت بعد بی‌صدا نسخهٔ قبلی را برمی‌گرداند. <b>dibs</b> به هر ایجنت می‌گوید از نوبت قبلش چه چیزی را عوض کرده‌اید، جلوی ویرایشی را که خطوط شما را برمی‌گرداند می‌گیرد، اگر چیزی رد شد آن را بازمی‌گرداند، و مدام یادآوری می‌کند چه چیزی هنوز کامیت یا پوش نشده است.</p>
-<div class="ctas">
-<a class="btn pri" href="#start"><span lang="en">Get started</span><span lang="fa">شروع کنید</span> →</a>
-<a class="btn" href="#try"><span lang="en">Try the revert guard</span><span lang="fa">گارد بازگشت را امتحان کنید</span></a>
-</div>
-<div class="inst"><code><b>$</b> pipx install git+https://github.com/mrzroot/dibs && dibs init</code><button class="copy" data-copy="pipx install git+https://github.com/mrzroot/dibs && dibs init">copy</button></div>
-<div class="meta"><span>Claude Code</span><span>Codex</span><span>Cursor</span><span>Gemini CLI</span><span>Copilot</span><span>Aider</span></div>
-</div>
-<div class="stage">
-<div class="ed" aria-label="Animated demo">
-<div class="ed-bar"><span class="dots"><i></i><i></i><i></i></span><span>src/api.py</span><span class="who"><span class="chip you">● you</span><span class="chip bot">● claude</span></span></div>
-<div class="code" id="code"></div>
-<div class="prompt" id="prompt"><span class="p">›</span><span id="ptext" class="mono"></span></div>
-</div>
-<div class="brief" id="brief"></div>
-<div class="stamp" id="stamp">DIBS!<small>blocked: undoes your line</small></div>
-<div class="caption"><span class="step" id="stepn">1/5</span><p id="cap"></p><button class="replay" id="replay">↺ <span lang="en">replay</span><span lang="fa">دوباره</span></button></div>
-</div>
-</div></section>
+<section class="hero split" aria-labelledby="h1">
+  <div class="side you">
+    <p class="who"><span class="dot"></span><span data-i="who_you">You</span></p>
+    <p class="big" data-i="hero_you">You fixed one line by hand.</p>
+  </div>
+  <div class="seam" aria-hidden="true"><div class="seal"><span>dibs</span></div></div>
+  <div class="side ai">
+    <p class="who"><span class="dot"></span><span data-i="who_ai">The agent</span></p>
+    <p class="big" data-i="hero_ai">It rewrote the file from memory.</p>
+  </div>
+</section>
+<section class="pitch">
+  <h1 id="h1" data-i="h1">dibs stops AI coding agents from undoing what you typed.</h1>
+  <p data-i="pitch">Agents don't see the edits you make between their turns, so they "fix" them back. dibs tells them what you changed, blocks the revert before it lands, and restores only your lines if one slips through.</p>
+  <p class="agents">Claude Code · Codex · Gemini CLI · Cursor · Copilot · aider</p>
+  <div class="cta">
+    <a class="btn btn-stamp" href="#arena" data-i="cta_play">Play: you vs the agent ↓</a>
+    <a class="btn btn-line" href="https://github.com/mrzroot/dibs" rel="noopener" data-i="cta_gh">Source on GitHub</a>
+  </div>
+</section>
 
-<section class="band" id="problem"><div class="wrap">
-<span class="sec-n">01 /</span>
-<div class="quote">
-<div>
-<h2 lang="en">Agents don't see what you did between turns.</h2>
-<h2 lang="fa">ایجنت‌ها نمی‌بینند بین دو نوبت چه کرده‌اید.</h2>
-<p class="sub" lang="en">An agent remembers the file the way it last wrote it. When you tweak something in between, its next edit is built on a stale copy, so your change gets reverted, usually silently. It happens in every tool, and it is easy to miss until it ships.</p>
-<p class="sub" lang="fa">ایجنت فایل را همان‌طور به خاطر دارد که آخرین بار نوشته است. اگر در این فاصله چیزی را تغییر دهید، ویرایش بعدی‌اش روی نسخهٔ کهنه ساخته می‌شود و تغییر شما معمولاً بی‌صدا برمی‌گردد. این در همهٔ ابزارها پیش می‌آید و تا به محصول نرسد به چشم نمی‌آید.</p>
-<blockquote><span lang="en">“The agent reverts my manual edits in between queries… This is a known issue.”</span><span lang="fa">«ایجنت ویرایش‌های دستی من را بین درخواست‌ها برمی‌گرداند… این یک مشکل شناخته‌شده است.»</span><cite><a href="https://forum.cursor.com/t/agent-reverts-my-manual-edits-in-between-queries/158451">forum.cursor.com</a> · <span lang="en">user report and staff reply, paraphrased</span><span lang="fa">گزارش کاربر و پاسخ تیم، نقل به مضمون</span></cite></blockquote>
-</div>
-<ol class="tl">
-<li><span class="chip bot">claude</span><span lang="en">writes <code>timeout=10</code></span><span lang="fa">می‌نویسد <code>timeout=10</code></span></li>
-<li><span class="chip you">you</span><span lang="en">change it to <code>timeout=30</code></span><span lang="fa">به <code>timeout=30</code> تغییرش می‌دهید</span></li>
-<li><span class="chip you">you</span><span lang="en">ask: “add logging”</span><span lang="fa">می‌خواهید: «لاگ اضافه کن»</span></li>
-<li class="bad"><span class="chip bot">claude</span><span lang="en">rewrites the function from memory: <code>timeout=10</code> is back</span><span lang="fa">تابع را از حافظه بازنویسی می‌کند و <code>timeout=10</code> برمی‌گردد</span></li>
-<li class="bad"><span class="chip" style="color:#ffa94d">git</span><span lang="en">3 files modified, branch never pushed. Nobody noticed.</span><span lang="fa">سه فایل تغییرکرده، شاخه هیچ‌وقت پوش نشده و هیچ‌کس متوجه نشده.</span></li>
-</ol>
-</div>
-</div></section>
+<section id="arena" class="arena" aria-labelledby="arena-h">
+  <h2 id="arena-h" class="arena-h"><span data-i="arena_h">The arena</span> <small data-i="arena_sub">a real-time copy of what dibs does in your repo</small></h2>
+  <ol class="steps">
+    <li data-step="1"><b>1</b> <span data-i="step1">Edit a line in <code>api.py</code> (try <code>timeout=30</code>)</span></li>
+    <li data-step="2"><b>2</b> <span data-i="step2">Give the agent a task</span></li>
+    <li data-step="3"><b>3</b> <span data-i="step3">Watch it try to write from memory</span></li>
+  </ol>
+  <div class="split board">
+    <div class="side you pane">
+      <div class="pane-head">
+        <span class="tab">api.py</span>
+        <span class="pane-who" data-i="pane_you">your editor · type here</span>
+      </div>
+      <div class="ed" id="ed">
+        <div class="gutter" id="gutter" aria-hidden="true"></div>
+        <div class="code" id="code">
+          <div class="hl" id="hl" aria-hidden="true"></div>
+          <textarea id="ta" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="api.py — editable"></textarea>
+          <div class="ghost" id="ghost" aria-hidden="true"><i></i><span data-i="ghost">agent</span></div>
+          <div class="stamp" id="stamp" aria-hidden="true">DIBS</div>
+        </div>
+      </div>
+      <div class="pane-foot">
+        <button class="btn btn-small" id="autoEdit" type="button" data-i="auto_edit">Make my edit for me</button>
+        <span class="legend"><i class="lg-you"></i><span data-i="lg_you">your lines</span> <i class="lg-ai"></i><span data-i="lg_ai">agent's new lines</span></span>
+      </div>
+    </div>
+    <div class="seam board-seam" aria-hidden="true">
+      <div class="meter"><b id="saved">0</b><span data-i="saved">lines saved</span></div>
+    </div>
+    <div class="side ai pane">
+      <div class="pane-head">
+        <span class="tab tab-ai" data-i="mem_tab">agent memory</span>
+        <span class="pane-who" data-i="pane_ai">what it thinks api.py says</span>
+      </div>
+      <pre class="mem" id="mem" aria-label="Agent memory of api.py"></pre>
+      <div class="log" id="log" role="log" aria-live="polite" aria-label="Agent session"></div>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="tasks" role="group" aria-label="Agent tasks">
+      <button class="btn task" type="button" data-task="logging"><span data-i="t_logging">Ask: “add logging”</span></button>
+      <button class="btn task" type="button" data-task="retry"><span data-i="t_retry">Ask: “add retries”</span></button>
+      <button class="btn task" type="button" data-task="types"><span data-i="t_types">Ask: “add type hints”</span></button>
+    </div>
+    <div class="switches">
+      <label class="toggle"><input type="checkbox" id="guard" checked><span class="knob"></span><span class="tg-label"><span data-i="guard">dibs guard</span> <b id="guardState">ON</b></span></label>
+      <button class="btn btn-line btn-small" id="reset" type="button" data-i="reset">Reset</button>
+    </div>
+    <div class="fix" id="fix" hidden>
+      <span data-i="fix_msg">The agent undid your line. dibs still has it in the journal.</span>
+      <button class="btn btn-stamp btn-small" id="restore" type="button"><code>dibs restore api.py</code></button>
+      <button class="btn btn-line btn-small" id="ack" type="button"><code>dibs ack</code></button>
+    </div>
+  </div>
+</section>
 
-<section id="how"><div class="wrap">
-<span class="sec-n">02 /</span>
-<h2 lang="en">A journal, a brief, and a guard.</h2>
-<h2 lang="fa">یک دفتر ثبت، یک خلاصه و یک نگهبان.</h2>
-<p class="sub" lang="en"><code>dibs init</code> wires hooks into each agent you use. From then on every turn has a start and an end, so dibs knows which bytes the agent wrote and which ones you did.</p>
-<p class="sub" lang="fa"><code>dibs init</code> هوک‌ها را به هر ایجنتی که استفاده می‌کنید وصل می‌کند. از آن به بعد هر نوبت شروع و پایان دارد، پس dibs می‌داند کدام تغییر را ایجنت نوشته و کدام را شما.</p>
-<div class="feat">
-<div class="card rv"><span class="tape"></span><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></div><h3 lang="en">Attribution journal</h3><h3 lang="fa">دفتر انتساب</h3><p lang="en">Every change is recorded with its author: <b>you</b>, or <b>claude / codex / cursor / gemini / copilot / aider</b>. Content is stored locally in <code>.git/dibs</code>, nothing leaves your machine.</p><p lang="fa">هر تغییر با نویسنده‌اش ثبت می‌شود: <b>شما</b> یا یکی از ایجنت‌ها. محتوا به‌صورت محلی در <code>.git/dibs</code> ذخیره می‌شود و چیزی از دستگاهتان خارج نمی‌شود.</p></div>
-<div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></div><h3 lang="en">“Since your last turn” brief</h3><h3 lang="fa">خلاصهٔ «از نوبت قبلت»</h3><p lang="en">At the start of each turn the agent gets a short diff of what changed under it, by you or by another agent, so it builds on the current file instead of its memory.</p><p lang="fa">در شروع هر نوبت، ایجنت یک diff کوتاه از تغییرات تازه (کار شما یا ایجنتی دیگر) می‌گیرد تا روی فایل فعلی کار کند، نه روی حافظه‌اش.</p></div>
-<div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3 lang="en">Revert guard</h3><h3 lang="fa">نگهبان بازگشت</h3><p lang="en">Before an edit is applied, dibs checks whether it would drop a line you added or bring back one you deleted. Claude Code asks you; other agents are told no, with the reason.</p><p lang="fa">پیش از اعمال ویرایش، dibs بررسی می‌کند که آیا خطی را که شما اضافه کرده‌اید حذف می‌کند یا خطی را که حذف کرده‌اید برمی‌گرداند. Claude Code از شما می‌پرسد و بقیهٔ ایجنت‌ها با دلیل رد می‌شوند.</p></div>
-<div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v5h5"/></svg></div><h3 lang="en">Surgical restore</h3><h3 lang="fa">بازگردانی دقیق</h3><p lang="en">If a revert slips through (a shell <code>sed</code>, a pasted file), <code>dibs restore</code> puts back only your lines and keeps the rest of the agent's work.</p><p lang="fa">اگر بازگشتی از دست در برود (مثلاً <code>sed</code> در شل)، <code>dibs restore</code> فقط خطوط شما را برمی‌گرداند و بقیهٔ کار ایجنت را نگه می‌دارد.</p></div>
-<div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 6"/></svg></div><h3 lang="en">Sync status</h3><h3 lang="fa">وضعیت همگام‌سازی</h3><p lang="en">Uncommitted files, unpushed commits, branches that never reached a remote, stashes, repos with no remote at all, shown to you and to the agent.</p><p lang="fa">فایل‌های کامیت‌نشده، کامیت‌های پوش‌نشده، شاخه‌هایی که هرگز به ریموت نرسیده‌اند، stashها و مخزن‌های بدون ریموت؛ هم به شما نشان داده می‌شود هم به ایجنت.</p></div>
-<div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8"/></svg></div><h3 lang="en">Blame for who, not when</h3><h3 lang="fa">blame برای «چه کسی»</h3><p lang="en"><code>dibs blame</code> shows, per line, whether you or an agent wrote it, even before anything is committed.</p><p lang="fa"><code>dibs blame</code> برای هر خط نشان می‌دهد شما نوشته‌اید یا یک ایجنت، حتی پیش از هر کامیت.</p></div>
-</div>
-</div></section>
+<section id="beats" class="beats" aria-labelledby="beats-h">
+  <h2 id="beats-h" class="band-h" data-i="beats_h">One turn, both sides of the seam</h2>
+  <div class="split beat">
+    <div class="side you"><span class="n">01</span><h3 data-i="b1y_h">You edit by hand</h3><p data-i="b1y">Between turns you change <code>timeout=10</code> to <code>timeout=30</code>. dibs records it as yours — with the lines, the time, and the file.</p></div>
+    <div class="seam"></div>
+    <div class="side ai"><h3 data-i="b1a_h">The agent gets a brief</h3><pre class="term">[dibs] Since your last turn these files were
+changed outside your session — by the human, by hand.
+• api.py — edited by human (+1 −1, 2m ago)
+    - r = requests.get(url, timeout=10)
+    + r = requests.get(url, timeout=30)</pre></div>
+  </div>
+  <div class="split beat">
+    <div class="side you"><span class="n">02</span><h3 data-i="b2y_h">It tries anyway</h3><p data-i="b2y">Before any edit runs, dibs checks whether it removes lines you added or brings back lines you deleted. Claude Code asks you; Codex, Gemini and Cursor get a denial that names your lines.</p></div>
+    <div class="seam"></div>
+    <div class="side ai"><h3 data-i="b2a_h">The edit bounces</h3><pre class="term">dibs: this edit to api.py would undo changes the
+human made by hand.
+It removes lines the human added or changed:
+  + r = requests.get(url, timeout=30)
+Keep the human's version and make your change
+around it.</pre></div>
+  </div>
+  <div class="split beat">
+    <div class="side you"><span class="n">03</span><h3 data-i="b3y_h">Something slipped through?</h3><p data-i="b3y">A <code>sed</code> in a shell command, or an agent with no hooks. dibs sees it right after, tells the agent, blocks the commit, and puts back only your lines.</p></div>
+    <div class="seam"></div>
+    <div class="side ai"><h3 data-i="b3a_h">Your lines come back</h3><pre class="term">$ git commit -m "add logging"
+dibs: this commit contains files where an AI agent
+undid lines you edited by hand:
+  #7 api.py (claude): r = requests.get(url, timeout=30)
+$ dibs restore api.py
+✓ restored the human lines in api.py (undoing #7)</pre></div>
+  </div>
+</section>
 
-<section class="alt" id="try"><div class="wrap">
-<span class="sec-n">03 /</span>
-<h2 lang="en">Try the revert guard.</h2>
-<h2 lang="fa">نگهبان بازگشت را امتحان کنید.</h2>
-<p class="sub" lang="en">This is the same check dibs runs before an agent's edit, ported to JavaScript. Edit any box; the verdict updates as you type.</p>
-<p class="sub" lang="fa">این همان بررسی‌ای است که dibs پیش از ویرایش ایجنت انجام می‌دهد، به جاوااسکریپت منتقل شده. هر جعبه را ویرایش کنید؛ نتیجه همزمان به‌روز می‌شود.</p>
-<div class="presets" role="group">
-<button data-preset="revert" aria-pressed="true"><span lang="en">Agent reverts you</span><span lang="fa">ایجنت کار شما را برمی‌گرداند</span></button>
-<button data-preset="build" aria-pressed="false"><span lang="en">Agent builds on you</span><span lang="fa">ایجنت روی کار شما می‌سازد</span></button>
-<button data-preset="resurrect" aria-pressed="false"><span lang="en">Agent resurrects a deleted line</span><span lang="fa">ایجنت خط حذف‌شده را زنده می‌کند</span></button>
-</div>
-<div class="pg">
-<div class="pane bot"><label><span lang="en">1 · Agent's last version</span><span lang="fa">۱ · آخرین نسخهٔ ایجنت</span><span class="chip bot">claude</span></label><textarea id="pA" spellcheck="false"></textarea></div>
-<div class="pane you"><label><span lang="en">2 · After your edit</span><span lang="fa">۲ · پس از ویرایش شما</span><span class="chip you">you</span></label><textarea id="pB" spellcheck="false"></textarea></div>
-<div class="pane bot"><label><span lang="en">3 · Agent proposes</span><span lang="fa">۳ · پیشنهاد ایجنت</span><span class="chip bot">claude</span></label><textarea id="pC" spellcheck="false"></textarea></div>
-</div>
-<div class="verdict" id="verdict" aria-live="polite"></div>
-</div></section>
+<section id="verified" class="verified" aria-labelledby="ver-h">
+  <h2 id="ver-h" class="band-h" data-i="ver_h">Verified with the real CLIs — honestly</h2>
+  <p class="ver-sub" data-i="ver_sub">Real agent binaries, real config parsing, real hook runners. Only the model's replies were scripted (no accounts were used).</p>
+  <div class="tbl-wrap">
+  <table class="tbl">
+    <thead><tr><th data-i="th_agent">Agent</th><th data-i="th_ver">Version</th><th data-i="th_guard">Guard before edit</th><th data-i="th_shell">Shell revert caught</th><th data-i="th_brief">Brief reaches model</th></tr></thead>
+    <tbody>
+      <tr><th>Claude Code</th><td>2.1.295</td><td class="y">✓ ask</td><td class="y">✓</td><td class="y">✓</td></tr>
+      <tr><th>Codex CLI</th><td>0.162.0</td><td class="y">✓ deny</td><td class="y">✓</td><td class="y">✓</td></tr>
+      <tr><th>Gemini CLI</th><td>0.63.0</td><td class="y">✓ deny</td><td class="y">✓</td><td class="y">✓</td></tr>
+      <tr><th>aider</th><td>0.86.2</td><td class="n" data-i="after_run">after the run</td><td class="y">✓</td><td class="y">✓ --read</td></tr>
+      <tr><th>Cursor agent</th><td>2026.10.01</td><td class="m" data-i="unit_only" colspan="3">unit tests from its source · needs a Cursor login to run end to end</td></tr>
+      <tr><th>Copilot</th><td>—</td><td class="m" data-i="not_run" colspan="3">not run · needs VS Code + a Copilot account</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
 
-<section class="band" id="agents"><div class="wrap">
-<span class="sec-n">04 /</span>
-<h2 lang="en">One <code style="color:var(--you)">init</code>, every agent.</h2>
-<h2 lang="fa">یک <code style="color:var(--you)">init</code> برای همهٔ ایجنت‌ها.</h2>
-<p class="sub" lang="en">dibs detects which tools a repo uses and writes their native hook config. Existing hooks are kept; <code>dibs uninstall</code> removes only its own entries.</p>
-<p class="sub" lang="fa">dibs تشخیص می‌دهد مخزن از چه ابزارهایی استفاده می‌کند و تنظیمات هوک بومی همان ابزار را می‌نویسد. هوک‌های موجود حفظ می‌شوند و <code>dibs uninstall</code> فقط ورودی‌های خودش را حذف می‌کند.</p>
-<div class="agents" id="aglist"></div>
-<p class="legend" style="color:#a8a294"><span lang="en">“MCP + rules” means the agent is asked to call the dibs tools; it is guidance, not enforcement. The git pre-commit guard still applies to everyone.</span><span lang="fa">«MCP + قواعد» یعنی از ایجنت خواسته می‌شود ابزارهای dibs را صدا بزند؛ این راهنمایی است، نه اجبار. نگهبان pre-commit گیت برای همه فعال است.</span></p>
-</div></section>
+<section id="install" class="install split" aria-labelledby="inst-h">
+  <div class="side you">
+    <h2 id="inst-h" class="inst-h" data-i="inst_h">Call dibs in 20 seconds</h2>
+    <p data-i="inst_p">Python 3.9+, no dependencies. Everything stays in <code>.git/dibs/</code> on your machine.</p>
+  </div>
+  <div class="seam"></div>
+  <div class="side ai">
+<pre class="term term-big"><span class="c"># install (not on PyPI yet)</span>
+pipx install git+https://github.com/mrzroot/dibs@v0.1.1
 
-<section id="status"><div class="wrap two">
-<div>
-<span class="sec-n">05 /</span>
-<h2 lang="en">What isn't on GitHub yet?</h2>
-<h2 lang="fa">چه چیزی هنوز روی گیت‌هاب نیست؟</h2>
-<p class="sub" lang="en"><code>dibs status</code> answers it in one screen: who changed what, which agent edits undid your work, and what would be lost if this laptop died now.</p>
-<p class="sub" lang="fa"><code>dibs status</code> در یک صفحه جواب می‌دهد: چه کسی چه چیزی را تغییر داده، کدام ویرایش ایجنت کار شما را برگردانده، و اگر همین حالا لپ‌تاپ خراب شود چه چیزی از دست می‌رود.</p>
-<ul class="checks">
-<li><span class="k">1</span><span lang="en">Uncommitted, staged and untracked files</span><span lang="fa">فایل‌های کامیت‌نشده، stage‌شده و ردیابی‌نشده</span></li>
-<li><span class="k">2</span><span lang="en">Commits ahead of upstream, and branches never pushed</span><span lang="fa">کامیت‌های جلوتر از upstream و شاخه‌هایی که هرگز پوش نشده‌اند</span></li>
-<li><span class="k">3</span><span lang="en">No remote configured, detached HEAD, forgotten stashes</span><span lang="fa">نبود ریموت، HEAD جداشده و stashهای فراموش‌شده</span></li>
-<li><span class="k">4</span><span lang="en">The same line goes into every agent brief, so agents remind you too</span><span lang="fa">همین خط در خلاصهٔ هر ایجنت هم می‌آید تا ایجنت‌ها هم یادآوری کنند</span></li>
-</ul>
-</div>
-<div class="term rv"><div class="bar">~/shop · dibs status</div><pre id="tout"></pre></div>
-</div></section>
-
-<section class="alt" id="start"><div class="wrap">
-<span class="sec-n">06 /</span>
-<h2 lang="en">Sixty seconds to set up.</h2>
-<h2 lang="fa">راه‌اندازی در شصت ثانیه.</h2>
-<p class="sub" lang="en">Python 3.9+ and git. No daemon, no account, no network calls.</p>
-<p class="sub" lang="fa">پایتون ۳٫۹ به بالا و گیت. بدون سرویس پس‌زمینه، بدون حساب کاربری، بدون تماس شبکه.</p>
-<div class="tabs" role="tablist">
-<button role="tab" aria-selected="true" data-tab="0">pipx</button><button role="tab" aria-selected="false" data-tab="1">uv</button><button role="tab" aria-selected="false" data-tab="2">wheel</button><button role="tab" aria-selected="false" data-tab="3">source</button>
-</div>
-<div class="code-box"><pre id="tabcode"></pre><button class="copy" id="tabcopy">copy</button></div>
-<div class="steps">
-<div class="card"><h3><span class="num">1</span><span lang="en">Init in your repo</span><span lang="fa">init در مخزن</span></h3><p lang="en"><code>dibs init</code> detects your agents, or name them: <code>dibs init --agents claude,cursor</code>.</p><p lang="fa"><code>dibs init</code> ایجنت‌ها را پیدا می‌کند، یا نامشان را بدهید: <code>dibs init --agents claude,cursor</code>.</p></div>
-<div class="card"><h3><span class="num">2</span><span lang="en">Work as usual</span><span lang="fa">مثل همیشه کار کنید</span></h3><p lang="en">Edit by hand, prompt agents, switch tools. dibs records each turn through the hooks.</p><p lang="fa">دستی ویرایش کنید، به ایجنت‌ها دستور بدهید، ابزار عوض کنید. dibs هر نوبت را از طریق هوک‌ها ثبت می‌کند.</p></div>
-<div class="card"><h3><span class="num">3</span><span lang="en">Check before you leave</span><span lang="fa">پیش از رفتن بررسی کنید</span></h3><p lang="en"><code>dibs status</code>, then <code>dibs restore</code> if anything of yours was undone.</p><p lang="fa"><code>dibs status</code> و اگر چیزی از کارتان برگشته بود <code>dibs restore</code>.</p></div>
-</div>
-</div></section>
-
-<section id="cmds"><div class="wrap">
-<span class="sec-n">07 /</span>
-<h2 lang="en">Commands</h2>
-<h2 lang="fa">دستورها</h2>
-<div class="cmds" id="cmdlist"></div>
-</div></section>
-
-<section class="alt" id="compare"><div class="wrap">
-<span class="sec-n">08 /</span>
-<h2 lang="en">How it compares</h2>
-<h2 lang="fa">مقایسه با ابزارهای دیگر</h2>
-<p class="sub" lang="en">Attribution tools tell you afterwards who wrote a line. Checkpoints let you roll a whole turn back. dibs acts <b>during</b> the session, before your work is lost.</p>
-<p class="sub" lang="fa">ابزارهای انتساب بعداً می‌گویند چه کسی خطی را نوشته. چک‌پوینت‌ها کل یک نوبت را برمی‌گردانند. dibs <b>در حین</b> کار عمل می‌کند، پیش از آنکه کارتان از دست برود.</p>
-<div class="tbl"><table id="cmp"></table></div>
-<p class="legend"><span lang="en">Based on each project's public README as of October 2026. ✓ yes · ◐ partly · ✗ no.</span><span lang="fa">بر اساس README عمومی هر پروژه در مهر ۱۴۰۵. ✓ دارد · ◐ تا حدی · ✗ ندارد.</span></p>
-</div></section>
-
-<section id="faq"><div class="wrap">
-<span class="sec-n">09 /</span>
-<h2 lang="en">Questions</h2>
-<h2 lang="fa">پرسش‌ها</h2>
-<div class="faq" id="faqlist"></div>
-</div></section>
+<span class="c"># in each repo</span>
+dibs init      <span class="c"># wires your agents' hooks</span>
+dibs doctor    <span class="c"># checks they will really run</span>
+dibs status</pre>
+    <button class="btn btn-small copy" id="copy" type="button" data-i="copy">Copy install command</button>
+  </div>
+</section>
 </main>
 
-<footer><div class="wrap">
-<span class="sig">dibs!</span>
-<span lang="en">MIT licensed · made by <a href="https://mrzroot.github.io/">Mohammadreza Zare (mrzroot)</a></span><span lang="fa">با مجوز MIT · ساختهٔ <a href="https://mrzroot.github.io/">محمدرضا زارع (mrzroot)</a></span>
-<a href="https://github.com/mrzroot/dibs">GitHub</a>
-<a href="https://github.com/mrzroot/dibs/releases"><span lang="en">Releases</span><span lang="fa">انتشارها</span></a>
-<a href="https://github.com/mrzroot/dibs/blob/main/README.fa.md"><span lang="en">Persian README</span><span lang="fa">راهنمای فارسی</span></a>
-</div></footer>
-<script src="site.js"></script>
+<footer class="foot">
+  <span>dibs v0.1.1 · MIT · <a href="https://github.com/mrzroot">mrzroot</a></span>
+  <span><a href="https://github.com/mrzroot/dibs/releases/tag/v0.1.1" data-i="release">Release notes</a> · <a href="https://github.com/mrzroot/dibs/blob/main/README.fa.md">README فارسی</a></span>
+</footer>
+<script src="site.js" defer></script>
 </body>
 </html>

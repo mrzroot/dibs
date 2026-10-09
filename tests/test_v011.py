@@ -173,7 +173,7 @@ def test_run_hands_brief_to_aider_and_warns(repo, tmp_path, capfd):
 
 def test_baseline_on_many_files_is_fast(repo):
     for i in range(3000):
-        (repo / f"m{i}.txt").write_text(f"line {i}\n")
+        (repo / f"m{i}.txt").write_bytes(f"line {i}\n".encode())  # LF bytes: same blob id as git's on every OS
     git(repo, "add", ".")
     git(repo, "commit", "-qm", "many")
     (repo / "m1.txt").write_text("dirty\n")

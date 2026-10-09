@@ -32,11 +32,11 @@ The journal lives in `.git/dibs/` (or `.dibs/` outside git). It is never committ
 dibs is not on PyPI yet. Install the command from GitHub:
 
 ```bash
-pipx install git+https://github.com/mrzroot/dibs@v0.1.0
+pipx install git+https://github.com/mrzroot/dibs@v0.1.1
 # or
-uv tool install git+https://github.com/mrzroot/dibs@v0.1.0
+uv tool install git+https://github.com/mrzroot/dibs@v0.1.1
 # or the wheel attached to the release
-pip install dibs-0.1.0-py3-none-any.whl
+pip install dibs-0.1.1-py3-none-any.whl
 ```
 
 Then, in each repository:
@@ -174,6 +174,9 @@ and the journal marks those edits as approved overrides.
 - Line matching ignores whitespace and only looks at whole lines; a revert that rewrites a line into
   something new is not a "revert" to dibs.
 - `dibs blame` covers changes since dibs started; older lines show `·`.
+- With `core.autocrlf=true` (the Git for Windows default) a CRLF working copy has a different blob id
+  than the LF copy git stores, so `dibs init` copies those files into its blob store too: more disk,
+  still correct.
 - Large files (> 2 MB) and binaries are tracked by hash only. On a 30,000-file repository `dibs init`
   takes ~1.2 s and each hook 0.1–0.4 s (`scripts/bench.py`).
 

@@ -1,143 +1,370 @@
-(function(){
-var D=document,H=D.documentElement,$=function(s){return D.querySelector(s)},$$=function(s){return Array.prototype.slice.call(D.querySelectorAll(s))};
-function L(){return H.getAttribute('data-lang')==='fa'?'fa':'en'}
-var hooks=[];
-function setLang(l){H.setAttribute('data-lang',l);H.lang=l;H.dir=l==='fa'?'rtl':'ltr';try{localStorage.setItem('mrz-lang',l)}catch(e){}
- $$('.lang button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.set===l?'true':'false')});
- D.title=l==='fa'?'dibs — ویرایش‌هایتان را رزرو کنید':'dibs — call dibs on your edits';hooks.forEach(function(f){f()})}
-$$('.lang button').forEach(function(b){b.onclick=function(){setLang(b.dataset.set)}});
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function copyBtn(b,getText){b.addEventListener('click',function(){var t=getText();var done=function(){b.textContent='✓';b.classList.add('ok');setTimeout(function(){b.textContent='copy';b.classList.remove('ok')},1400)};
- if(navigator.clipboard){navigator.clipboard.writeText(t).then(done,done)}else{var a=D.createElement('textarea');a.value=t;D.body.appendChild(a);a.select();try{D.execCommand('copy')}catch(e){}a.remove();done()}})}
-$$('.copy[data-copy]').forEach(function(b){copyBtn(b,function(){return b.dataset.copy})});
-var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-/* ---------- hero demo ---------- */
-function hl(t){return esc(t).replace(/(&quot;|"[^"]*")/g,'<span class="st">$1</span>').replace(/\b(import|def|return)\b/g,'<span class="kw">$1</span>').replace(/\b(\d+)\b/g,'<span class="nu">$1</span>').replace(/\b(fetch|get|getLogger|info|json)\b/g,'<span class="fn">$1</span>')}
-var V1=[['bot','import requests'],['bot',''],['bot','def fetch(url):'],['bot','    r = requests.get(url, timeout=10)'],['bot','    return r.json()']];
-var USER='    r = requests.get(url, timeout=30, verify="ca.pem")';
-var steps=[
- {cap:{en:'Claude writes fetch() with a 10 s timeout.',fa:'Claude تابع fetch را با مهلت ۱۰ ثانیه می‌نویسد.'}},
- {cap:{en:'You fix it by hand: 30 s, and your CA bundle.',fa:'شما دستی اصلاحش می‌کنید: ۳۰ ثانیه و فایل CA خودتان.'}},
- {cap:{en:'Next prompt. dibs hands Claude a brief of your edit.',fa:'درخواست بعدی. dibs خلاصهٔ ویرایش شما را به Claude می‌دهد.'}},
- {cap:{en:'Claude rewrites from memory… and dibs stops it.',fa:'Claude از حافظه بازنویسی می‌کند… و dibs جلویش را می‌گیرد.'}},
- {cap:{en:'Second try: logging added, your line kept.',fa:'تلاش دوم: لاگ اضافه شد و خط شما ماند.'}}];
-var code=$('#code'),pt=$('#ptext'),brief=$('#brief'),stamp=$('#stamp'),cap=$('#cap'),stepn=$('#stepn'),cur=0,timers=[],typing=null;
-function render(lines,extra){code.innerHTML=lines.map(function(l,i){var who=l[0],t=l[1],cls='ln'+(l[2]?' '+l[2]:'');
- var w=who==='you'?'<span class="who you">you</span>':who==='bot'?'<span class="who bot">claude</span>':'<span class="who"></span>';
- return '<div class="'+cls+'">'+w+'<span class="n">'+(i+1)+'</span><span class="t">'+(t?hl(t):' ')+(l[3]?'<span class="caret'+(who==='bot'?' bot':'')+'"></span>':'')+'</span></div>'}).join('')}
-function T(f,ms){timers.push(setTimeout(f,ms))}
-function clear(){timers.forEach(clearTimeout);timers=[];brief.classList.remove('on');stamp.classList.remove('on')}
-function setCap(i){cur=i;stepn.textContent=(i+1)+'/5';cap.textContent=steps[i].cap[L()]}
-hooks.push(function(){setCap(cur)});
-function typeLine(lines,idx,who,text,ms,done){var n=0;var tick=function(){n++;var c=lines.slice();c[idx]=[who,text.slice(0,n),who==='you'?'hl':'',true];render(c);if(n<text.length)T(tick,ms);else done&&done()};tick()}
-function play(){clear();
- setCap(0);pt.textContent='';render([]);
- var acc=[];V1.forEach(function(l,i){T(function(){acc.push([l[0],l[1],'new']);render(acc)},350+i*260)});
- T(function(){setCap(1);var base=V1.map(function(l){return [l[0],l[1]]});
-  typeLine(base,3,'you',USER,reduce?0:32,function(){})},2800);
- T(function(){setCap(2);var c=V1.map(function(l){return [l[0],l[1]]});c[3]=['you',USER,'hl'];render(c);
-  var p='add logging';var k=0;(function ty(){k++;pt.textContent=p.slice(0,k);if(k<p.length)T(ty,60)})();
-  T(function(){brief.innerHTML='<b>[dibs]</b> Since your last turn, edited by the human, by hand:<br>• src/api.py (+1 −1, 12s ago)<br><span class="m">  - r = requests.get(url, timeout=10)</span><br><span class="p">  + r = requests.get(url, timeout=30, verify="ca.pem")</span><br>Build on these. Do not revert them.';brief.classList.add('on')},900)},6600);
- T(function(){setCap(3);brief.classList.remove('on');
-  render([['bot','import logging','add'],['bot','import requests'],['bot',''],['bot','def fetch(url):'],['bot','    log.info("GET %s", url)','add'],['you',USER,'ghost'],['bot','    r = requests.get(url, timeout=10)','add'],['bot','    return r.json()']]);
-  T(function(){stamp.classList.add('on')},700)},11200);
- T(function(){setCap(4);stamp.classList.remove('on');
-  render([['bot','import logging','new'],['bot','import requests'],['bot',''],['bot','def fetch(url):'],['bot','    log.info("GET %s", url)','new'],['you',USER,'hl'],['bot','    return r.json()']]);
-  pt.textContent='add logging  ✓'},15600);
- if(!reduce)T(play,22000)}
-$('#replay').onclick=play;play();
+  /* ------------------------------------------------------------------ i18n */
+  const FA = {
+    skip: "پرش به دمو", nav_demo: "دمو", nav_how: "چطور", nav_verified: "آزموده‌شده", nav_install: "نصب",
+    who_you: "شما", who_ai: "ایجنت",
+    hero_you: "یک خط را دستی درست کردید.", hero_ai: "او فایل را از حافظه بازنویسی کرد.",
+    h1: "dibs نمی‌گذارد ایجنت‌های هوش مصنوعی چیزی را که شما نوشته‌اید برگردانند.",
+    pitch: "ایجنت‌ها ویرایش‌هایی را که بین نوبت‌هایشان انجام می‌دهید نمی‌بینند و آن‌ها را «درست» برمی‌گردانند. dibs به آن‌ها می‌گوید چه چیزی را عوض کرده‌اید، جلوی برگرداندن را پیش از اعمال می‌گیرد و اگر چیزی رد شد، فقط خطوط شما را برمی‌گرداند.",
+    cta_play: "بازی کنید: شما در برابر ایجنت ↓", cta_gh: "کد در گیت‌هاب",
+    arena_h: "میدان", arena_sub: "نسخهٔ زندهٔ همان کاری که dibs در مخزن شما می‌کند",
+    step1: "یک خط از <code>api.py</code> را ویرایش کنید (مثلاً <code>timeout=30</code>)", step2: "به ایجنت کاری بدهید", step3: "ببینید که می‌خواهد از حافظه بنویسد",
+    pane_you: "ویرایشگر شما · اینجا تایپ کنید", ghost: "agent", auto_edit: "ویرایشم را خودت انجام بده",
+    lg_you: "خطوط شما", lg_ai: "خطوط تازهٔ ایجنت", saved: "خط نجات یافت",
+    mem_tab: "حافظهٔ ایجنت", pane_ai: "فکر می‌کند api.py این است",
+    t_logging: "بگو: «لاگ اضافه کن»", t_retry: "بگو: «تلاش مجدد اضافه کن»", t_types: "بگو: «نوع‌ها را اضافه کن»",
+    guard: "نگهبان dibs", reset: "از نو",
+    fix_msg: "ایجنت خط شما را برگرداند. dibs هنوز آن را در دفترش دارد.",
+    beats_h: "یک نوبت، از دو سوی درز",
+    b1y_h: "شما دستی ویرایش می‌کنید", b1y: "بین دو نوبت، <code>timeout=10</code> را به <code>timeout=30</code> تغییر می‌دهید. dibs آن را به نام شما ثبت می‌کند — با خطوط، زمان و فایل.",
+    b1a_h: "ایجنت خلاصه می‌گیرد",
+    b2y_h: "باز هم تلاش می‌کند", b2y: "پیش از اجرای هر ویرایش، dibs بررسی می‌کند که آیا خطی را که افزوده‌اید حذف می‌کند یا خطی را که پاک کرده‌اید برمی‌گرداند. Claude Code از شما می‌پرسد؛ Codex و Gemini و Cursor پاسخ ردی می‌گیرند که خطوط شما را نام می‌برد.",
+    b2a_h: "ویرایش پس زده می‌شود",
+    b3y_h: "چیزی رد شد؟", b3y: "یک <code>sed</code> در دستور شل، یا ایجنتی بدون هوک. dibs بلافاصله می‌بیند، به ایجنت می‌گوید، جلوی کامیت را می‌گیرد و فقط خطوط شما را برمی‌گرداند.",
+    b3a_h: "خطوط شما برمی‌گردند",
+    ver_h: "آزموده با خود CLIها — صادقانه", ver_sub: "باینری واقعی ایجنت‌ها، تجزیهٔ واقعی تنظیمات، اجراکنندهٔ واقعی هوک. فقط پاسخ‌های مدل از پیش نوشته شده بود (هیچ حسابی استفاده نشد).",
+    th_agent: "ایجنت", th_ver: "نسخه", th_guard: "نگهبان پیش از ویرایش", th_shell: "تشخیص برگرداندن با شل", th_brief: "رسیدن خلاصه به مدل",
+    after_run: "بعد از اجرا", unit_only: "آزمون واحد از روی کد خودش · برای آزمون کامل حساب Cursor لازم است", not_run: "اجرا نشده · VS Code و حساب Copilot لازم است",
+    inst_h: "در ۲۰ ثانیه dibs بگویید", inst_p: "پایتون ۳٫۹ به بالا، بدون وابستگی. همه چیز روی دستگاه خودتان در <code>.git/dibs/</code> می‌ماند.",
+    copy: "کپی دستور نصب", release: "یادداشت انتشار",
+    /* runtime strings */
+    log_empty: "جلسهٔ ایجنت اینجا نمایش داده می‌شود.",
+    k_user: "شما", k_tool: "ابزار", k_dibs: "dibs → ایجنت", k_agent: "ایجنت", k_ok: "انجام شد", k_warn: "dibs (نگهبان خاموش)", k_restore: "dibs restore",
+    from_memory: "از حافظه، بدون خواندن دوبارهٔ فایل",
+    agent_reply: "فهمیدم — خط شما را نگه می‌دارم و تغییرم را دور آن می‌سازم.",
+    wrote_ok: "نوشته شد. هیچ خطی از شما حذف نشد.",
+    warn_revert: "ایجنت {n} خط شما را برگرداند (#{seq}). کامیت مسدود خواهد شد تا restore یا ack کنید.",
+    restored: "خطوط شما برگشت؛ تغییرات دیگر ایجنت ماند.",
+    acked: "پذیرفته شد: نسخهٔ ایجنت می‌ماند.",
+    no_edit_hint: "نکته: اول یک خط را دستی عوض کنید تا ببینید dibs چطور وارد می‌شود.",
+    copied: "کپی شد ✓", guard_on: "روشن", guard_off: "خاموش",
+    task_logging: "لاگ اضافه کن", task_retry: "تلاش مجدد اضافه کن", task_types: "نوع‌ها را اضافه کن",
+  };
+  const EN = {};
+  $$("[data-i]").forEach(el => { EN[el.dataset.i] = el.innerHTML; });
+  Object.assign(EN, {
+    log_empty: "The agent's session shows up here.",
+    k_user: "you", k_tool: "tool call", k_dibs: "dibs → agent", k_agent: "agent", k_ok: "done", k_warn: "dibs (guard off)", k_restore: "dibs restore",
+    from_memory: "from memory, without re-reading the file",
+    agent_reply: "Got it — keeping your line and building my change around it.",
+    wrote_ok: "Written. None of your lines were touched.",
+    warn_revert: "The agent undid {n} of your line(s) (#{seq}). The commit will be blocked until you restore or ack.",
+    restored: "Your lines are back; the agent's other changes stay.",
+    acked: "Accepted: the agent's version stays.",
+    no_edit_hint: "Tip: change a line by hand first to see dibs step in.",
+    copied: "Copied ✓", guard_on: "ON", guard_off: "OFF",
+    task_logging: "add logging", task_retry: "add retries", task_types: "add type hints",
+  });
+  const params = new URLSearchParams(location.search);
+  let lang = params.get("lang") === "fa" || params.get("lang") === "en" ? params.get("lang") : null;
+  try { lang = lang || localStorage.getItem("dibs-lang"); } catch (e) { /* storage blocked */ }
+  if (lang !== "fa") lang = "en";
+  const t = k => (lang === "fa" ? FA[k] : EN[k]) ?? EN[k] ?? k;
 
-/* ---------- playground ---------- */
-var TRIV=/^[\s{}\[\]();,:.\-*\/#<>"'`|=+!?\\]*$/,TW={'else':1,'else:':1,'end':1,'fi':1,'done':1,'pass':1,'return':1,'break':1,'continue':1,'try:':1,'finally:':1,'}':1,'};':1,']':1,')':1,'});':1,'</div>':1,'<div>':1,'"""':1,"'''":1};
-function key(l){return l.trim().split(/\s+/).join(' ')}
-function sig(l){var k=key(l);return k.length>=3&&!TRIV.test(k)&&!TW[k]}
-function cnt(lines){var m={};lines.forEach(function(l){var k=key(l);m[k]=(m[k]||0)+1});return m}
-function delta(a,b){var A=cnt(a),B=cnt(b),add={},rem={};Object.keys(B).forEach(function(k){var d=B[k]-(A[k]||0);if(d>0)add[k]=d});Object.keys(A).forEach(function(k){var d=A[k]-(B[k]||0);if(d>0)rem[k]=d});return{add:add,rem:rem}}
-function split(s){return s.replace(/\r\n/g,'\n').replace(/\n$/,'').split('\n')}
-var P={
- revert:['import requests\n\ndef fetch(url):\n    r = requests.get(url, timeout=10)\n    return r.json()','import requests\n\ndef fetch(url):\n    r = requests.get(url, timeout=30, verify="ca.pem")\n    return r.json()','import logging\nimport requests\n\nlog = logging.getLogger(__name__)\n\ndef fetch(url):\n    log.info("GET %s", url)\n    r = requests.get(url, timeout=10)\n    return r.json()'],
- build:['import requests\n\ndef fetch(url):\n    r = requests.get(url, timeout=10)\n    return r.json()','import requests\n\ndef fetch(url):\n    r = requests.get(url, timeout=30, verify="ca.pem")\n    return r.json()','import logging\nimport requests\n\nlog = logging.getLogger(__name__)\n\ndef fetch(url):\n    log.info("GET %s", url)\n    r = requests.get(url, timeout=30, verify="ca.pem")\n    return r.json()'],
- resurrect:['DEBUG = True\nPAYMENTS_URL = "https://sandbox.pay.example"\nRETRIES = 3','PAYMENTS_URL = "https://pay.example"\nRETRIES = 3','DEBUG = True\nPAYMENTS_URL = "https://pay.example"\nRETRIES = 5']};
-var pA=$('#pA'),pB=$('#pB'),pC=$('#pC'),vd=$('#verdict');
-function judge(){var a=split(pA.value),b=split(pB.value),c=split(pC.value);
- var h=delta(a,b),C=cnt(c),B=cnt(b),dropped=[],res=[];
- Object.keys(h.add).forEach(function(k){if(sig(k)&&(C[k]||0)<(B[k]||0))dropped.push(k)});
- Object.keys(h.rem).forEach(function(k){if(sig(k)&&!(B[k])&&(C[k]||0)>0)res.push(k)});
- var fa=L()==='fa',out;
- if(!Object.keys(h.add).length&&!Object.keys(h.rem).length){vd.className='verdict';out='<h4>'+(fa?'شما چیزی تغییر نداده‌اید.':'You haven\'t changed anything yet.')+'</h4>'+(fa?'جعبهٔ دوم را ویرایش کنید تا ببینید نگهبان چه چیزی را حفظ می‌کند.':'Edit box 2 to see what the guard protects.')}
- else if(dropped.length||res.length){vd.className='verdict bad';
-  var p='dibs: this edit to api.py would undo changes the human made by hand.\n';
-  if(dropped.length)p+='It removes lines the human added or changed:\n'+dropped.map(function(k){return '<span class="p">  + '+esc(k)+'</span>'}).join('\n')+'\n';
-  if(res.length)p+='It brings back lines the human deleted:\n'+res.map(function(k){return '<span class="m">  - '+esc(k)+'</span>'}).join('\n')+'\n';
-  p+='Keep the human\'s version and make your change around it.\nOnly if the user asked for it: run `dibs allow api.py` and retry.';
-  out='<h4>✗ '+(fa?'رد شد (Claude Code از شما می‌پرسد)':'Blocked (Claude Code asks you instead)')+'</h4><pre>'+p+'</pre>'}
- else{vd.className='verdict good';var n=0;Object.keys(delta(b,c).add).forEach(function(){n++});
-  out='<h4>✓ '+(fa?'مجاز: ویرایش شما حفظ شده است':'Allowed: your edit survives')+'</h4>'+(fa?'ایجنت روی نسخهٔ شما ساخته است. ':'The agent built on your version. ')+'<span class="mono">'+n+(fa?' خط جدید':' new line(s)')+'</span>'}
- vd.innerHTML=out}
-function preset(n){pA.value=P[n][0];pB.value=P[n][1];pC.value=P[n][2];$$('.presets button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.preset===n?'true':'false')});judge()}
-$$('.presets button').forEach(function(b){b.onclick=function(){preset(b.dataset.preset)}});
-[pA,pB,pC].forEach(function(t){t.addEventListener('input',judge)});preset('revert');hooks.push(judge);
+  function applyLang() {
+    const html = document.documentElement;
+    html.lang = lang; html.dir = lang === "fa" ? "rtl" : "ltr";
+    $$("[data-i]").forEach(el => { const v = t(el.dataset.i); if (v != null) el.innerHTML = v; });
+    $("#lang").textContent = lang === "fa" ? "EN" : "فا";
+    $("#lang").setAttribute("aria-label", lang === "fa" ? "Switch to English" : "تغییر به فارسی");
+    $("#log").dataset.empty = t("log_empty");
+    const heads = $$(".tbl thead th").map(th => th.textContent);
+    $$(".tbl tbody tr").forEach(tr => { let c = 0; $$("th,td", tr).forEach(cell => { if (cell.tagName === "TD") cell.dataset.l = cell.colSpan > 1 ? "" : heads[c] || ""; c += cell.colSpan || 1; }); });
+    $("#guardState").textContent = guard() ? t("guard_on") : t("guard_off");
+    document.title = lang === "fa" ? "dibs — چیزی که نوشتید را ایجنت پس نمی‌گیرد" : "dibs — you typed it, the agent can't take it back";
+  }
+  $("#lang").addEventListener("click", () => {
+    lang = lang === "fa" ? "en" : "fa";
+    try { localStorage.setItem("dibs-lang", lang); } catch (e) { /* ignore */ }
+    applyLang(); relabelLog();
+  });
 
-/* ---------- agents ---------- */
-var AG=[
- ['Claude Code','#d97757','.claude/settings.json',{b:['y','UserPromptSubmit'],g:['y',{en:'asks you',fa:'از شما می‌پرسد'}],r:['y','Edit · Write · Bash']}],
- ['Codex CLI','#10a37f','.codex/hooks.json + AGENTS.md',{b:['y','UserPromptSubmit'],g:['y',{en:'denies',fa:'رد می‌کند'}],r:['y','apply_patch · Bash']}],
- ['Cursor','#7c8cff','.cursor/hooks.json + rules/dibs.mdc',{b:['p',{en:'after 1st tool call',fa:'پس از اولین ابزار'}],g:['y',{en:'denies',fa:'رد می‌کند'}],r:['y','afterFileEdit · shell']}],
- ['Gemini CLI','#4f8dff','.gemini/settings.json',{b:['y','BeforeAgent'],g:['y',{en:'denies',fa:'رد می‌کند'}],r:['y','write_file · replace']}],
- ['GitHub Copilot','#e6e6e6','.vscode/mcp.json + copilot-instructions.md',{b:['p','MCP dibs_brief'],g:['p','MCP dibs_check_edit'],r:['p','MCP dibs_done']}],
- ['Aider & others','#ffd43b','AGENTS.md · dibs run --agent aider -- aider',{b:['p',{en:'printed at start',fa:'در شروع چاپ می‌شود'}],g:['p',{en:'after the fact',fa:'پس از وقوع'}],r:['y',{en:'whole run',fa:'کل اجرا'}]}]];
-var RL={b:{en:'Brief',fa:'خلاصه'},g:{en:'Guard',fa:'نگهبان'},r:{en:'Records',fa:'ثبت'}};
-function tx(v){return typeof v==='string'?v:v[L()]}
-function agents(){$('#aglist').innerHTML=AG.map(function(a){return '<div class="ag rv in"><h3><span class="dot" style="background:'+a[1]+'"></span>'+a[0]+'</h3><div class="via">'+esc(a[2])+'</div><ul>'+['b','g','r'].map(function(k){return '<li><span>'+tx(RL[k])+'</span><b class="'+a[3][k][0]+'">'+esc(tx(a[3][k][1]))+'</b></li>'}).join('')+'</ul></div>'}).join('')}
-agents();hooks.push(agents);
+  /* ------------------------------------------------------------------ model */
+  const V1 = [
+    "import requests",
+    "",
+    'BASE = "https://api.example.com"',
+    "",
+    "",
+    "def fetch(path):",
+    "    r = requests.get(BASE + path, timeout=10)",
+    "    r.raise_for_status()",
+    "    return r.json()",
+  ];
+  const TRIVIAL = new Set(["", ")", "]", "}", "else:", "pass", "try:", "#"]);
+  const norm = s => s.replace(/\s+/g, " ").trim();
+  const sig = s => !TRIVIAL.has(norm(s)) && norm(s).length > 1;
 
-/* ---------- status terminal ---------- */
-var TL=['<span class="d">$</span> dibs status','<span class="h">dibs · ~/shop  (feat/checkout)</span>','','<span class="h">Sync</span>','  <span class="w">!</span> 3 files not committed (2 modified, 1 untracked)','  <span class="w">!</span> 2 commits on feat/checkout never pushed (no upstream)','  <span class="w">!</span> 1 stash','','<span class="h">Agents</span>','  <span class="b">claude</span>   idle       last turn ended 4m ago  · up to date with your edits','  <span class="b">cursor</span>   idle       last turn ended 1h ago  · <span class="w">2 changes since its last turn</span>','','<span class="h">Reverted human lines</span>','  <span class="r">#14</span> api.py by cursor 1h ago: r = requests.get(url, timeout=30, verify="ca.pem")','      → <span class="g">dibs restore api.py</span>    (or `dibs ack 14` if it was wanted)','','<span class="h">Recent changes</span>','  #12   10-09 16:02  <span class="y">human </span>   M api.py +1 −1','  #13   10-09 16:05  <span class="b">claude</span>   M cart.py +18 −2','  #14   10-09 16:40  <span class="b">cursor</span>   M api.py +5 −1  <span class="r">REVERTED HUMAN LINES</span>','  #15   10-09 17:31  <span class="y">human </span>   A notes.md +6'];
-var tout=$('#tout'),played=false;
-function term(){if(played)return;played=true;if(reduce){tout.innerHTML=TL.join('\n');return}var i=0;(function n(){tout.innerHTML=TL.slice(0,++i).join('\n')+(i<TL.length?'\n<span class="caret"></span>':'');if(i<TL.length)setTimeout(n,i===1?500:110)})()}
+  // Each task is what the agent "knows how to do", applied to whatever text it starts from.
+  const lastImport = L => { let i = -1; L.forEach((l, k) => { if (/^(import|from)\s/.test(l)) i = k; }); return i; };
+  const TASKS = {
+    logging(L) {
+      L = L.slice();
+      if (!L.some(l => /^import logging\b/.test(l))) L.unshift("import logging");
+      if (!L.some(l => /^log = logging/.test(l))) { const i = lastImport(L); L.splice(i + 1, 0, "", "log = logging.getLogger(__name__)"); }
+      const g = L.findIndex(l => /requests\.\w+\(/.test(l) && /^\s+/.test(l));
+      if (g >= 0 && !L.some(l => /log\.info\(/.test(l))) L.splice(g, 0, L[g].match(/^\s*/)[0] + 'log.info("GET %s", path)');
+      return L;
+    },
+    retry(L) {
+      L = L.slice();
+      if (!L.some(l => /tenacity/.test(l))) { const i = lastImport(L); L.splice(i + 1, 0, "from tenacity import retry, stop_after_attempt"); }
+      const d = L.findIndex(l => /^def fetch/.test(l));
+      if (d >= 0 && !/^@retry/.test(L[d - 1] || "")) L.splice(d, 0, "@retry(stop=stop_after_attempt(3))");
+      return L;
+    },
+    types(L) {
+      return L.map(l => l.replace(/^def fetch\((\w+)\):/, "def fetch($1: str) -> dict:"));
+    },
+  };
 
-/* ---------- install tabs ---------- */
-var TABS=['<span class="c"># recommended</span>\npipx install git+https://github.com/mrzroot/dibs\ncd your-repo && dibs init',
-'uv tool install git+https://github.com/mrzroot/dibs\ncd your-repo && dibs init',
-'<span class="c"># wheel from the GitHub release</span>\npip install https://github.com/mrzroot/dibs/releases/download/v0.1.0/dibs-0.1.0-py3-none-any.whl\ncd your-repo && dibs init',
-'git clone https://github.com/mrzroot/dibs && cd dibs\npip install -e .\ncd ../your-repo && dibs init'];
-var tc=$('#tabcode');function tab(i){tc.innerHTML=TABS[i];$$('.tabs button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.tab==i?'true':'false')})}
-$$('.tabs button').forEach(function(b){b.onclick=function(){tab(+b.dataset.tab)}});tab(0);
-copyBtn($('#tabcopy'),function(){return tc.textContent.split('\n').filter(function(l){return l&&l[0]!=='#'}).join('\n')});
+  let mem = V1.slice();          // what the agent remembers
+  let mine = new Set();          // normalized lines the human wrote (protected)
+  let deleted = new Set();       // normalized lines the human deleted
+  let aiNew = new Set();         // lines the agent added in its last write
+  let saved = 0, seq = 6, busy = false, pending = null, edited = false;
+  const done = new Set();
 
-/* ---------- commands ---------- */
-var CM=[['dibs init','wire hooks for the agents in this repo','هوک ایجنت‌های این مخزن را وصل می‌کند'],['dibs status','sync, agents, reverted lines, recent changes','همگام‌سازی، ایجنت‌ها، خطوط برگشته، تغییرات اخیر'],['dibs sync','uncommitted / unpushed / no remote','کامیت‌نشده / پوش‌نشده / بدون ریموت'],['dibs log --diff','journal of every change and its author','دفتر همهٔ تغییرات و نویسنده‌شان'],['dibs blame FILE','who wrote each line: you or which agent','هر خط را چه کسی نوشته: شما یا کدام ایجنت'],['dibs restore FILE','put back only your reverted lines','فقط خطوط برگشتهٔ شما را بازمی‌گرداند'],['dibs ack N','accept a revert as intended','یک بازگشت را عمدی اعلام می‌کند'],['dibs allow FILE','let agents change your lines for 10 min','۱۰ دقیقه اجازهٔ تغییر خطوط شما را می‌دهد'],['dibs brief --agent A','start a turn and print the brief','نوبت را شروع و خلاصه را چاپ می‌کند'],['dibs run --agent A -- cmd','wrap any CLI agent in a turn','هر ایجنت خط فرمانی را در یک نوبت می‌پیچد'],['dibs mcp','MCP server for any MCP client','سرور MCP برای هر کلاینت MCP'],['dibs uninstall','remove only what dibs added','فقط چیزهایی را که dibs اضافه کرده حذف می‌کند']];
-function cmds(){var f=L()==='fa';$('#cmdlist').innerHTML=CM.map(function(c){return '<div><code>'+esc(c[0])+'</code><span>'+(f?c[2]:c[1])+'</span></div>'}).join('')}
-cmds();hooks.push(cmds);
+  const ta = $("#ta"), hl = $("#hl"), gutter = $("#gutter"), ghost = $("#ghost"), stamp = $("#stamp"), log = $("#log");
+  const guard = () => $("#guard").checked;
+  const lines = () => ta.value.split("\n");
+  const count = arr => { const m = new Map(); arr.forEach(l => { const k = norm(l); m.set(k, (m.get(k) || 0) + 1); }); return m; };
 
-/* ---------- comparison ---------- */
-var CH={y:'<span class="y">✓</span>',p:'<span class="p">◐</span>',n:'<span class="n">✗</span>'};
-var CT={h:{en:['','dibs','git-ai · Agent Blame','agentdiff','agentrec · flashpoint','Editor checkpoints'],fa:['','dibs','git-ai · Agent Blame','agentdiff','agentrec · flashpoint','چک‌پوینت ویرایشگر']},
-r:[[{en:'Tells the agent what you changed since its last turn',fa:'به ایجنت می‌گوید از نوبت قبلش چه تغییر داده‌اید'},'y','n','n','p','n'],
-[{en:'Blocks an edit that undoes your lines, before it lands',fa:'ویرایشی را که خطوط شما را برمی‌گرداند پیش از اعمال متوقف می‌کند'},'y','n','n','n','n'],
-[{en:'Restores only your lines, keeps the agent\'s other work',fa:'فقط خطوط شما را برمی‌گرداند و بقیهٔ کار ایجنت می‌ماند'},'y','n','n','p','n'],
-[{en:'Line attribution: human vs which agent',fa:'انتساب خط: انسان یا کدام ایجنت'},'y','y','y','p','n'],
-[{en:'Uncommitted / unpushed / no-remote warnings',fa:'هشدار کامیت‌نشده / پوش‌نشده / بدون ریموت'},'y','n','n','n','n'],
-[{en:'Works across several agents in one repo',fa:'با چند ایجنت در یک مخزن کار می‌کند'},'y','y','n','p','n'],
-[{en:'Survives in git history (notes)',fa:'در تاریخچهٔ گیت می‌ماند (notes)'},'n','y','y','n','n']]};
-function cmp(){var l=L();$('#cmp').innerHTML='<thead><tr>'+CT.h[l].map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr></thead><tbody>'+CT.r.map(function(r){return '<tr><td>'+r[0][l]+'</td>'+r.slice(1).map(function(c,i){return '<td'+(i===0?' class="us"':'')+'>'+CH[c]+'</td>'}).join('')+'</tr>'}).join('')+'</tbody>'}
-cmp();hooks.push(cmp);
+  function track() {
+    const cur = lines(), cm = count(cur), mm = count(mem);
+    const next = new Set();
+    for (const l of cur) { const k = norm(l); if (sig(l) && (mine.has(k) || (cm.get(k) || 0) > (mm.get(k) || 0))) next.add(k); }
+    mine = next;
+    deleted = new Set([...deleted].filter(k => !cm.has(k)));
+    for (const l of mem) { const k = norm(l); if (sig(l) && !cm.has(k)) deleted.add(k); }
+  }
 
-/* ---------- faq ---------- */
-var FQ=[
-[{en:'Does anything leave my machine?',fa:'آیا چیزی از دستگاه من خارج می‌شود؟'},{en:'No. The journal and file snapshots live in <code>.git/dibs</code> (or <code>.dibs/</code> outside git). dibs makes no network calls; <code>dibs sync --fetch</code> only runs <code>git fetch</code> when you ask.',fa:'خیر. دفتر و نسخه‌های فایل در <code>.git/dibs</code> (یا <code>.dibs/</code> بیرون از گیت) ذخیره می‌شوند. dibs هیچ تماس شبکه‌ای ندارد و <code>dibs sync --fetch</code> فقط وقتی بخواهید <code>git fetch</code> اجرا می‌کند.'}],
-[{en:'How does it know an edit was mine?',fa:'از کجا می‌فهمد ویرایش مال من بوده؟'},{en:'Agents edit inside turns that hooks mark. Anything that changed between an agent\'s turns, and was not written by another agent\'s turn, is yours. If two agents are active at once, the change is labelled <code>unknown</code> and protected the same way.',fa:'ایجنت‌ها در نوبت‌هایی ویرایش می‌کنند که هوک‌ها مشخص می‌کنند. هر چیزی که بین نوبت‌های ایجنت تغییر کرده و کار نوبت ایجنت دیگری نبوده، مال شماست. اگر دو ایجنت همزمان فعال باشند، تغییر <code>unknown</code> علامت می‌خورد و به همان شکل محافظت می‌شود.'}],
-[{en:'What if I really want the agent to change my line?',fa:'اگر واقعاً بخواهم ایجنت خط مرا تغییر دهد؟'},{en:'Say so in the prompt. The agent (or you) runs <code>dibs allow FILE</code>, which lifts protection for 10 minutes. Claude Code simply asks you to approve.',fa:'در درخواست بگویید. ایجنت (یا خودتان) <code>dibs allow FILE</code> را اجرا می‌کند و محافظت ۱۰ دقیقه برداشته می‌شود. در Claude Code فقط از شما تأیید خواسته می‌شود.'}],
-[{en:'Will the guard block every edit near my code?',fa:'آیا نگهبان هر ویرایشی نزدیک کد من را رد می‌کند؟'},{en:'No. It only looks at your significant lines from the last 72 hours (braces, <code>pass</code>, blank lines are ignored) and only triggers when an edit removes a line you added or re-adds one you deleted.',fa:'خیر. فقط خطوط معنادار شما در ۷۲ ساعت اخیر را بررسی می‌کند (آکولاد، <code>pass</code> و خط خالی نادیده گرفته می‌شوند) و فقط وقتی فعال می‌شود که ویرایشی خطی را که اضافه کرده‌اید حذف کند یا خط حذف‌شده‌ای را برگرداند.'}],
-[{en:'What about edits through the shell, like sed or a script?',fa:'ویرایش از طریق شل، مثل sed یا یک اسکریپت چه؟'},{en:'They cannot be stopped in advance, but they are caught after the command: the agent is told in the same turn, and <code>dibs status</code> lists the revert with a <code>dibs restore</code> hint. The pre-commit hook also refuses to commit unresolved reverts.',fa:'از قبل قابل توقف نیستند، اما پس از اجرای دستور شناسایی می‌شوند: در همان نوبت به ایجنت گفته می‌شود و <code>dibs status</code> بازگشت را با راهنمای <code>dibs restore</code> نشان می‌دهد. هوک pre-commit هم کامیت بازگشت‌های حل‌نشده را رد می‌کند.'}],
-[{en:'Does a hook failure break my agent?',fa:'آیا خطای هوک ایجنت را از کار می‌اندازد؟'},{en:'No. Every hook fails open: on any error it allows the action and writes the details to <code>.git/dibs/hook-errors.log</code>.',fa:'خیر. همهٔ هوک‌ها در صورت خطا اجازه می‌دهند و جزئیات را در <code>.git/dibs/hook-errors.log</code> می‌نویسند.'}],
-[{en:'Do teammates need dibs installed?',fa:'آیا هم‌تیمی‌ها هم باید dibs نصب کنند؟'},{en:'No. If you commit the hook configs, agents without dibs on PATH report a failing hook and carry on, and the pre-commit line skips itself.',fa:'خیر. اگر تنظیمات هوک را کامیت کنید، ایجنت‌هایی که dibs ندارند یک هوک ناموفق گزارش می‌کنند و ادامه می‌دهند و خط pre-commit هم خودش را رد می‌کند.'}],
-[{en:'How is this different from checkpoints or git-ai?',fa:'چه فرقی با چک‌پوینت‌ها یا git-ai دارد؟'},{en:'Checkpoints roll back a whole turn, after you notice. git-ai and Agent Blame record authorship in git notes at commit time. dibs works inside the session: it briefs the agent, guards the edit, and restores only your lines.',fa:'چک‌پوینت‌ها کل یک نوبت را پس از اینکه متوجه شدید برمی‌گردانند. git-ai و Agent Blame نویسندگی را هنگام کامیت در git notes ثبت می‌کنند. dibs در حین کار عمل می‌کند: به ایجنت خلاصه می‌دهد، ویرایش را کنترل می‌کند و فقط خطوط شما را برمی‌گرداند.'}]];
-function faq(){var l=L();var open=$$('#faqlist details').map(function(d){return d.open});$('#faqlist').innerHTML=FQ.map(function(q,i){return '<details'+(open[i]||(!open.length&&i===0)?' open':'')+'><summary>'+q[0][l]+'</summary><p>'+q[1][l]+'</p></details>'}).join('')}
-faq();hooks.push(faq);
+  function metrics() {
+    const cs = getComputedStyle(ta);
+    return { lh: parseFloat(cs.lineHeight) || 24, pad: parseFloat(cs.paddingTop) || 14, ch: chWidth() };
+  }
+  let _ch = 0;
+  function chWidth() {
+    if (_ch) return _ch;
+    const s = document.createElement("span");
+    s.textContent = "0".repeat(40); s.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
+    $("#code").appendChild(s); _ch = s.getBoundingClientRect().width / 40; s.remove();
+    return _ch || 8;
+  }
 
-/* ---------- reveal ---------- */
-if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');if(e.target.classList.contains('term'))term();io.unobserve(e.target)}})},{threshold:.15});$$('.rv').forEach(function(el){io.observe(el)})}else{$$('.rv').forEach(function(el){el.classList.add('in')});term()}
-setLang(L());
+  function render(fx = {}) {
+    const cur = lines();
+    const maxLen = Math.max(...cur.map(l => l.length), 20);
+    ta.rows = cur.length;
+    ta.style.width = `calc(${maxLen + 3}ch + ${2 * metrics().pad}px)`;
+    ta.style.height = `${cur.length * metrics().lh + 2 * metrics().pad}px`;
+    const cls = l => { const k = norm(l); return mine.has(k) ? "you" : aiNew.has(k) && sig(l) ? "ai" : ""; };
+    hl.innerHTML = ""; gutter.innerHTML = "";
+    cur.forEach((l, i) => {
+      const c = cls(l);
+      const d = document.createElement("div"); d.className = [c, fx[i] || ""].join(" ").trim(); d.textContent = l || " "; hl.appendChild(d);
+      const g = document.createElement("div"); g.className = c;
+      g.innerHTML = `<span>${i + 1}</span><span class="tg">${c === "you" ? "YOU" : c === "ai" ? "AI" : ""}</span>`;
+      gutter.appendChild(g);
+    });
+    const cm = count(cur);
+    const pre = $("#mem"); pre.innerHTML = "";
+    mem.forEach(l => { const d = document.createElement("div"); d.textContent = l; if (sig(l) && !cm.has(norm(l))) d.className = "stale"; pre.appendChild(d); });
+    steps();
+  }
+
+  function steps() {
+    const s = $$(".steps li");
+    s.forEach(li => li.classList.remove("on", "done"));
+    if (!edited) s[0].classList.add("on");
+    else { s[0].classList.add("done"); (busy ? s[2] : s[1]).classList.add("on"); if (busy) s[1].classList.add("done"); }
+  }
+
+  /* ------------------------------------------------------------------ log */
+  const entries = [];
+  function say(kind, key, extra = {}) { entries.push({ kind, key, extra }); drawMsg(entries[entries.length - 1]); }
+  function drawMsg(e) {
+    const d = document.createElement("div"); d.className = `msg ${e.kind}`;
+    const k = document.createElement("span"); k.className = "k"; k.textContent = t("k_" + e.kind); d.appendChild(k);
+    if (e.key) { const p = document.createElement("span"); p.textContent = fill(t(e.key), e.extra); d.appendChild(p); }
+    if (e.extra.text) { const p = document.createElement("span"); p.textContent = e.extra.text; d.appendChild(p); }
+    if (e.extra.pre) { const p = document.createElement("pre"); p.textContent = e.extra.pre; d.appendChild(p); }
+    log.appendChild(d); log.scrollTop = log.scrollHeight;
+  }
+  const fill = (s, x) => s.replace(/\{(\w+)\}/g, (_, k) => x[k] ?? "");
+  function relabelLog() { log.innerHTML = ""; entries.forEach(drawMsg); }
+
+  /* ------------------------------------------------------------------ the duel */
+  const sleep = ms => new Promise(r => setTimeout(r, matchMedia("(prefers-reduced-motion: reduce)").matches ? Math.min(ms, 60) : ms));
+  function placeGhost(i, col) {
+    const m = metrics();
+    ghost.style.transform = `translate(${m.pad + col * m.ch}px, ${m.pad + i * m.lh}px)`;
+  }
+  async function sweep(from, to, L) {
+    for (let i = from; i <= to; i++) { placeGhost(i, (L[i] || "").match(/^\s*/)[0].length); await sleep(Math.max(60, 900 / Math.max(L.length, 1))); }
+  }
+  function dibsMessage(revs) {
+    return "dibs: this edit to api.py would undo changes the human made by hand.\n" +
+      (revs.dropped.length ? "It removes lines the human added or changed:\n" + revs.dropped.map(l => "  + " + l.trim()).join("\n") + "\n" : "") +
+      (revs.back.length && !revs.dropped.length ? "It brings back lines the human deleted:\n" + revs.back.map(l => "  - " + l.trim()).join("\n") + "\n" : "") +
+      "Keep the human's version and make your change around it. Only if the user explicitly asked to change these lines, run `dibs allow api.py` and retry.";
+  }
+  function lock(on) {
+    busy = on; ta.readOnly = on;
+    $$(".task").forEach(b => { b.disabled = on || done.has(b.dataset.task) || !!pending; });
+    $("#autoEdit").disabled = on || !!pending; $("#reset").disabled = on;
+    steps();
+  }
+
+  async function runTask(name) {
+    if (busy || pending) return;
+    lock(true); track();
+    const cur = lines();
+    const stale = TASKS[name](mem);         // what the agent writes from memory
+    const merged = TASKS[name](cur);        // the same change built on the real file
+    const staleSet = count(stale);
+    const dropped = cur.filter(l => mine.has(norm(l)) && !staleSet.has(norm(l)));
+    const back = stale.filter(l => deleted.has(norm(l)));
+    const r = $("#ed").getBoundingClientRect();
+    if (r.top < 60 || r.bottom > innerHeight) {  // on phones the buttons sit below the editor: bring the duel into view
+      $("#ed").scrollIntoView({ behavior: "smooth", block: r.height > innerHeight - 80 ? "start" : "center" });
+      await sleep(450);
+    }
+    say("user", "task_" + name);
+    say("tool", null, { text: `\u2066Write(api.py)\u2069 — ${t("from_memory")}` });
+    if (!mine.size && !deleted.size) say("agent", "no_edit_hint");
+    ghost.classList.add("on");
+    const hitAt = dropped.length ? cur.findIndex(l => norm(l) === norm(dropped[0]))
+      : back.length ? Math.max(0, cur.findIndex(l => norm(l) === norm(stale[stale.findIndex(s => deleted.has(norm(s))) - 1] || ""))) : -1;
+    if (hitAt < 0) {
+      await sweep(0, cur.length - 1, cur);
+      finishWrite(merged, name);
+      say("ok", "wrote_ok");
+    } else {
+      await sweep(0, hitAt, cur);
+      seq++;
+      if (guard()) {
+        ghost.classList.add("hit"); stamp.style.top = `${metrics().pad + hitAt * metrics().lh - 8}px`;
+        stamp.classList.remove("on"); void stamp.offsetWidth; stamp.classList.add("on");
+        const fx = {}; cur.forEach((l, i) => { if (dropped.some(d => norm(d) === norm(l))) fx[i] = "boom"; }); render(fx);
+        say("dibs", null, { pre: dibsMessage({ dropped, back }) });
+        await sleep(1100); ghost.classList.remove("hit");
+        say("agent", "agent_reply");
+        await sweep(0, 0, merged);
+        await sweep(0, merged.length - 1, merged);
+        finishWrite(merged, name);
+        bumpSaved(Math.max(dropped.length, back.length));
+        say("ok", "wrote_ok");
+      } else {
+        const fx = {}; cur.forEach((l, i) => { if (dropped.some(d => norm(d) === norm(l))) fx[i] = "gone"; }); render(fx);
+        await sleep(700);
+        await sweep(hitAt, stale.length - 1, stale);
+        const before = cur.slice();
+        const oldMem = count(mem);
+        ta.value = stale.join("\n"); aiNew = new Set([...newLines(before, stale)].filter(k => !oldMem.has(k))); mem = stale.slice();
+        pending = { merged, n: Math.max(dropped.length, back.length), name, mine: [...mine] };
+        const cm0 = count(before);
+        render(markLines(stale, stale.filter(l => sig(l) && !cm0.has(norm(l)) && !aiNew.has(norm(l)) || back.includes(l)), "gone"));
+        say("tool", null, { text: "\u2066Write(api.py) ✓\u2069" });
+        say("warn", "warn_revert", { n: Math.max(dropped.length, back.length), seq });
+        $("#fix").hidden = false;
+        done.add(name); markDone();
+      }
+    }
+    ghost.classList.remove("on");
+    lock(false);
+  }
+  const newLines = (before, after) => { const b = count(before), s = new Set(); after.forEach(l => { if (!b.has(norm(l))) s.add(norm(l)); }); return s; };
+  const markLines = (L, which, c) => { const fx = {}; L.forEach((l, i) => { if (which.some(w => norm(w) === norm(l))) fx[i] = c; }); return fx; };
+  function finishWrite(next, name) {
+    const before = lines();
+    aiNew = newLines(before, next);
+    ta.value = next.join("\n"); mem = next.slice();
+    done.add(name); markDone(); track(); render();
+  }
+  function markDone() { $$(".task").forEach(b => b.classList.toggle("done", done.has(b.dataset.task))); }
+  function bumpSaved(n) {
+    saved += n; $("#saved").textContent = saved;
+    const m = $(".meter"); m.classList.remove("bump"); void m.offsetWidth; m.classList.add("bump");
+  }
+
+  $("#restore").addEventListener("click", () => {
+    if (!pending) return;
+    const p = pending; pending = null;
+    const before = lines();
+    ta.value = p.merged.join("\n"); mem = p.merged.slice();
+    mine = new Set(p.mine); deleted = new Set(); track();
+    const fx = {}; p.merged.forEach((l, i) => { if (mine.has(norm(l)) && !before.some(b => norm(b) === norm(l))) fx[i] = "back"; });
+    render(fx);
+    say("restore", "restored");
+    bumpSaved(p.n);
+    $("#fix").hidden = true; lock(false);
+  });
+  $("#ack").addEventListener("click", () => {
+    if (!pending) return;
+    pending = null; mine = new Set(); deleted = new Set(); track(); render();
+    say("ok", "acked"); $("#fix").hidden = true; lock(false);
+  });
+
+  /* ------------------------------------------------------------------ human input */
+  ta.addEventListener("input", () => { edited = true; track(); render(); });
+  ta.addEventListener("keydown", e => {
+    if (e.key === "Tab" && !e.shiftKey && !ta.readOnly) { e.preventDefault(); document.execCommand ? document.execCommand("insertText", false, "    ") : null; }
+  });
+  $("#autoEdit").addEventListener("click", async () => {
+    if (busy || pending) return;
+    const cur = lines();
+    let i = cur.findIndex(l => /timeout=\d+\)/.test(l));
+    if (i < 0) i = cur.findIndex(l => /requests\./.test(l));
+    if (i < 0) return;
+    lock(true);
+    const target = cur[i].includes("timeout=10)") ? cur[i].replace("timeout=10)", 'timeout=30, verify="ca.pem")')
+      : cur[i].replace(/\)\s*$/, ', verify="ca.pem")');
+    const start = cur.slice(0, i).join("\n").length + (i ? 1 : 0);
+    const orig = cur[i];
+    let pfx = 0; while (pfx < Math.min(orig.length, target.length) && target[pfx] === orig[pfx]) pfx++;
+    let sfx = 0; while (sfx < Math.min(orig.length, target.length) - pfx && target[target.length - 1 - sfx] === orig[orig.length - 1 - sfx]) sfx++;
+    ta.focus({ preventScroll: true });
+    const tail = target.slice(target.length - sfx);
+    for (let k = pfx; k <= target.length - sfx; k++) {
+      cur[i] = target.slice(0, k) + tail;
+      ta.value = cur.join("\n");
+      ta.setSelectionRange(start + k, start + k);
+      edited = true; track(); render();
+      await sleep(30);
+    }
+    cur[i] = target; ta.value = cur.join("\n"); track(); render();
+    lock(false);
+  });
+
+  $$(".task").forEach(b => b.addEventListener("click", () => runTask(b.dataset.task)));
+  $("#guard").addEventListener("change", () => { $("#guardState").textContent = guard() ? t("guard_on") : t("guard_off"); });
+  function reset() {
+    mem = V1.slice(); mine = new Set(); deleted = new Set(); aiNew = new Set(); pending = null; edited = false;
+    done.clear(); markDone(); entries.length = 0; log.innerHTML = ""; $("#fix").hidden = true;
+    ta.value = V1.join("\n"); render(); lock(false);
+  }
+  $("#reset").addEventListener("click", reset);
+
+  $("#copy").addEventListener("click", async () => {
+    const cmd = "pipx install git+https://github.com/mrzroot/dibs@v0.1.1";
+    try { await navigator.clipboard.writeText(cmd); } catch (e) {
+      const x = document.createElement("textarea"); x.value = cmd; document.body.appendChild(x); x.select();
+      try { document.execCommand("copy"); } catch (e2) { /* ignore */ } x.remove();
+    }
+    const b = $("#copy"); b.textContent = t("copied"); setTimeout(() => { b.textContent = t("copy"); }, 1600);
+  });
+
+  // re-measure when fonts arrive or the layout changes
+  const remeasure = () => { _ch = 0; render(); };
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasure);
+  addEventListener("resize", () => { clearTimeout(remeasure.t); remeasure.t = setTimeout(remeasure, 150); });
+
+  applyLang();
+  reset();
+  window.__dibsDemo = { runTask, state: () => ({ mine: [...mine], mem, text: ta.value, saved, pending: !!pending }) };
 })();
