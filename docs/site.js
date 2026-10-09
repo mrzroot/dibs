@@ -234,6 +234,7 @@
       $("#ed").scrollIntoView({ behavior: "smooth", block: r.height > innerHeight - 80 ? "start" : "center" });
       await sleep(450);
     }
+    $("#code").scrollLeft = 0;  // the duel starts at the left edge of the code
     say("user", "task_" + name);
     say("tool", null, { text: `\u2066Write(api.py)\u2069 — ${t("from_memory")}` });
     if (!mine.size && !deleted.size) say("agent", "no_edit_hint");
