@@ -9,7 +9,7 @@ from dibs.store import blob_id
 
 def test_blob_id_matches_git(repo):
     data = (repo / "app.py").read_bytes()
-    assert blob_id(data) == git(repo, "hash-object", "app.py").stdout.strip()
+    assert blob_id(data) == git(repo, "hash-object", "--no-filters", "app.py").stdout.strip()
 
 
 def test_human_edit_shows_in_brief_with_lines(repo):
