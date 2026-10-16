@@ -2,6 +2,9 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
+<script>/*mrz-theme*/(function(){var d=document.documentElement,m='system';try{m=localStorage.getItem('mrz-theme')||'system'}catch(e){}var q=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;var t=m==='light'||m==='dark'?m:(q&&q.matches?'dark':'light');d.setAttribute('data-theme',t);d.style.colorScheme=t})()</script>
+<meta name="theme-color" content="#f7f5ef">
+<meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>dibs — you typed it, the agent can't take it back</title>
 <meta name="description" content="dibs keeps AI coding agents (Claude Code, Codex, Gemini CLI, Cursor, Copilot, aider) from reverting the lines you changed by hand. Play the live human-vs-agent editor.">
@@ -9,11 +12,26 @@
 <meta property="og:description" content="Type a line. Watch an AI agent try to rewrite it from memory. Watch dibs stop it.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mrzroot.github.io/dibs/">
-<meta name="theme-color" content="#0D0B12">
+
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/dela.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/jbmono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="site.css">
+<style id="mrz-theme-css">
+/* mrz theme toggle */
+.mrz-tt{all:unset;box-sizing:border-box;cursor:pointer;display:inline-grid;place-items:center;flex:none;width:34px;height:34px;border-radius:999px;color:inherit;border:1.5px solid currentColor;transition:transform .2s,background-color .2s}
+.mrz-tt:hover{transform:rotate(-12deg)}.mrz-tt:focus-visible{outline:2px solid #1fb5ad;outline-offset:3px}
+.mrz-tt svg{width:17px;height:17px;display:block}
+html[data-theme=dark] .mrz-tt .i-moon,html:not([data-theme=dark]) .mrz-tt .i-sun{display:none}
+/* dibs · tokens live in site.css (light/dark); a few dark-mode ink lines that would vanish on dark zones */
+html[data-theme=dark] .ed{border-color:rgba(232,176,75,.55);box-shadow:6px 6px 0 rgba(232,176,75,.28)}
+html[data-theme=dark] .gutter{border-right-color:rgba(232,176,75,.4)}
+html[data-theme=dark] .legend i{border-color:rgba(236,239,247,.6)}
+html[data-theme=dark] .beat{border-top-color:#1f2847}
+html[data-theme=dark] .seal{border-color:#070b1a}
+html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme=dark] .controls .btn:not(.task){box-shadow:4px 4px 0 rgba(236,239,247,.5)}
+.beat .n{opacity:.85}
+</style>
 </head>
 <body>
 <a class="skip" href="#arena" data-i="skip">Skip to the demo</a>
@@ -26,7 +44,7 @@
     <a href="#verified" data-i="nav_verified">Verified</a>
     <a href="#install" data-i="nav_install">Install</a>
     <a href="https://github.com/mrzroot/dibs" rel="noopener">GitHub</a>
-    <button class="lang" id="lang" type="button" aria-label="Switch language">فا</button>
+    <button type="button" class="mrz-tt" data-theme-toggle aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></g></svg><svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></button><button class="lang" id="lang" type="button" aria-label="Switch language">فا</button>
   </nav>
 </header>
 
@@ -184,5 +202,16 @@ dibs status</pre>
   <span><a href="https://github.com/mrzroot/dibs/releases/tag/v0.1.1" data-i="release">Release notes</a> · <a href="https://github.com/mrzroot/dibs/blob/main/README.fa.md">README فارسی</a></span>
 </footer>
 <script src="site.js" defer></script>
+<script>/*mrz-theme-toggle*/(function(){var d=document.documentElement,q=window.matchMedia?matchMedia('(prefers-color-scheme: dark)'):null;
+function fa(){return d.getAttribute('data-lang')==='fa'||d.lang==='fa'}
+function sync(){var t=d.getAttribute('data-theme')==='dark'?'dark':'light',f=fa();
+document.querySelectorAll('[data-theme-toggle]').forEach(function(x){var l=t==='dark'?(f?'\u062a\u063a\u06cc\u06cc\u0631 \u0628\u0647 \u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646':'Switch to light mode'):(f?'\u062a\u063a\u06cc\u06cc\u0631 \u0628\u0647 \u062d\u0627\u0644\u062a \u062a\u06cc\u0631\u0647':'Switch to dark mode');x.setAttribute('aria-label',l);x.title=l;x.setAttribute('aria-pressed',t==='dark'?'true':'false')});
+document.querySelectorAll('picture source[media*="prefers-color-scheme"]').forEach(function(s){if(!s.getAttribute('data-mq'))s.setAttribute('data-mq',s.media);var wd=/dark/.test(s.getAttribute('data-mq'));s.media=(wd===(t==='dark'))?'all':'not all'});
+var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='dark'?'#070b1a':'#f7f5ef')}
+function set(t,save){d.setAttribute('data-theme',t);d.style.colorScheme=t;if(save){try{localStorage.setItem('mrz-theme',t)}catch(e){}}try{document.dispatchEvent(new CustomEvent('mrz-theme',{detail:t}))}catch(e){}}
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-theme-toggle]');if(!b)return;set(d.getAttribute('data-theme')==='dark'?'light':'dark',true)});
+if(q&&q.addEventListener)q.addEventListener('change',function(){var m;try{m=localStorage.getItem('mrz-theme')}catch(e){}if(m!=='light'&&m!=='dark')set(q.matches?'dark':'light',false)});
+window.addEventListener('storage',function(e){if(e.key==='mrz-theme'){var m=e.newValue;set(m==='light'||m==='dark'?m:(q&&q.matches?'dark':'light'),false)}});
+if(window.MutationObserver)new MutationObserver(sync).observe(d,{attributes:true,attributeFilter:['data-lang','lang','data-theme']});sync()})()</script>
 </body>
 </html>
