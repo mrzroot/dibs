@@ -32,7 +32,7 @@ html[data-theme=dark] .seal{border-color:#070b1a}
 html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme=dark] .controls .btn:not(.task){box-shadow:4px 4px 0 rgba(236,239,247,.5)}
 .beat .n{opacity:.85}
 </style>
-</head>
+<link rel="stylesheet" href="identity.css"></head>
 <body>
 <a class="skip" href="#arena" data-i="skip">Skip to the demo</a>
 
@@ -213,5 +213,5 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 if(q&&q.addEventListener)q.addEventListener('change',function(){var m;try{m=localStorage.getItem('mrz-theme')}catch(e){}if(m!=='light'&&m!=='dark')set(q.matches?'dark':'light',false)});
 window.addEventListener('storage',function(e){if(e.key==='mrz-theme'){var m=e.newValue;set(m==='light'||m==='dark'?m:(q&&q.matches?'dark':'light'),false)}});
 if(window.MutationObserver)new MutationObserver(sync).observe(d,{attributes:true,attributeFilter:['data-lang','lang','data-theme']});sync()})()</script>
-</body>
+<script src="fx.js" defer></script></body>
 </html>
