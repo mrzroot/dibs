@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from . import textdiff as td
 from .repo import HUMANISH, Repo, atomic_write, run_git
-from .store import Store, git_missing, is_binary, read_file, scan
+from .store import Store, git_missing, read_file, scan
 from .sync import sync_line, sync_status
 
 MAX_EVENT_LINES = 400

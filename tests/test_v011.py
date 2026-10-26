@@ -1,11 +1,9 @@
 """Tests for the 0.1.1 hardening: payloads taken from the real CLIs, doctor, lock, watch, run."""
 import json
 import os
-import stat
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 import pytest
 

@@ -133,7 +133,6 @@ def test_parse_patch():
 
 
 def test_persian_text_through_cli_hook(repo):
-    import os
     import subprocess
     import sys
     run = lambda ev, p: subprocess.run([sys.executable, "-m", "dibs", "hook", "codex", ev], cwd=repo,

@@ -1,6 +1,5 @@
-import subprocess
 
-from conftest import edit, git, hook
+from conftest import edit, git
 
 from dibs.core import Dibs
 from dibs.repo import Repo
