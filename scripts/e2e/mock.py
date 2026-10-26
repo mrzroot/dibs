@@ -3,7 +3,11 @@
 Main-agent requests (ones that offer file-edit tools) consume steps from SCRIPT (a JSON file);
 everything else gets a short text answer. Every request is logged to LOG.
 """
-import json, os, sys, time, uuid, threading
+import json
+import os
+import threading
+import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(os.environ.get("MOCK_PORT", "18800"))
@@ -12,7 +16,8 @@ os.makedirs(DIR, exist_ok=True)
 LOG = os.path.join(DIR, "log.jsonl")
 lock = threading.Lock()
 
-def next_step(kind):
+def next_step():
+    """Pop the next scripted step (script.json is rewritten without it); {"text": "done"} once the script runs out."""
     with lock:
         path = os.path.join(DIR, "script.json")
         try:
@@ -32,9 +37,11 @@ def log(entry):
 
 EDIT_NAMES = {"Edit", "Write", "apply_patch", "write_file", "replace", "shell", "exec_command", "Bash", "run_shell_command"}
 
-class H(BaseHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"
-    def log_message(self, *a): pass
+class MockHandler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"  # keep-alive, which the agent SDKs expect
+
+    def log_message(self, *args):
+        """Silence the default per-request stderr line; requests go to LOG instead."""
 
     def _body(self):
         n = int(self.headers.get("content-length") or 0)
@@ -62,7 +69,8 @@ class H(BaseHTTPRequestHandler):
 
     def _sse(self, event, data):
         s = (f"event: {event}\n" if event else "") + "data: " + json.dumps(data) + "\n\n"
-        self.wfile.write(s.encode()); self.wfile.flush()
+        self.wfile.write(s.encode())
+        self.wfile.flush()
 
     def do_GET(self):
         log({"t": time.time(), "method": "GET", "path": self.path})
@@ -71,9 +79,12 @@ class H(BaseHTTPRequestHandler):
         self._send(200, {})
 
     def do_HEAD(self):
-        self.send_response(200); self.send_header("content-length", "0"); self.end_headers()
+        self.send_response(200)
+        self.send_header("content-length", "0")
+        self.end_headers()
 
     def do_POST(self):
+        """Log the request, pick the next scripted step if it is a main-agent request, answer in the caller's dialect."""
         b = self._body()
         tools = b.get("tools") or []
         names = set()
@@ -82,10 +93,11 @@ class H(BaseHTTPRequestHandler):
                 names.add(t.get("name") or (t.get("function") or {}).get("name") or "")
                 for fd in t.get("functionDeclarations") or t.get("function_declarations") or []:
                     names.add(fd.get("name", ""))
+        # Only requests that offer an edit/shell tool are the agent's main turn; title or summary side-calls get "ok".
         main = bool(names & EDIT_NAMES)
         if os.environ.get("MOCK_MAIN_ALWAYS") == "1" and "/chat/completions" in self.path:
             main = True
-        step = next_step(self.path) if main else {"text": "ok"}
+        step = next_step() if main else {"text": "ok"}
         log({"t": time.time(), "path": self.path, "main": main, "tools": sorted(n for n in names if n)[:80], "step": step, "body": b})
         p = self.path
         if p.startswith("/v1/messages") and "count_tokens" in p:
@@ -104,6 +116,10 @@ class H(BaseHTTPRequestHandler):
 
     # ---------------- Anthropic
     def anthropic(self, b, step):
+        """Anthropic Messages. A stream is message_start, one content block (start/delta/stop), message_delta, message_stop.
+
+        A tool call streams its input as a single input_json_delta; the block is opened with an empty input.
+        """
         mid = "msg_" + uuid.uuid4().hex[:20]
         if "tool" in step:
             block = {"type": "tool_use", "id": "toolu_" + uuid.uuid4().hex[:20], "name": step["tool"], "input": step["input"]}
@@ -130,6 +146,7 @@ class H(BaseHTTPRequestHandler):
 
     # ---------------- OpenAI Responses (Codex)
     def oai_responses(self, b, step):
+        """OpenAI Responses (Codex). apply_patch is a *custom* tool call: free-form `input`, not JSON `arguments`."""
         rid = "resp_" + uuid.uuid4().hex[:16]
         if "tool" in step:
             if step.get("custom"):
@@ -154,6 +171,7 @@ class H(BaseHTTPRequestHandler):
 
     # ---------------- OpenAI Chat (Aider)
     def chat(self, b, step):
+        """OpenAI Chat Completions (aider): text only, so the 'edit' is whatever file block the script's text contains."""
         text = step.get("text", "")
         cid = "chatcmpl-" + uuid.uuid4().hex[:12]
         if not b.get("stream"):
@@ -165,10 +183,12 @@ class H(BaseHTTPRequestHandler):
                          "choices": [{"index": 0, "delta": {"role": "assistant", "content": text}, "finish_reason": None}]})
         self._sse(None, {"id": cid, "object": "chat.completion.chunk", "created": int(time.time()), "model": "mock",
                          "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]})
-        self.wfile.write(b"data: [DONE]\n\n"); self.wfile.flush()
+        self.wfile.write(b"data: [DONE]\n\n")  # OpenAI streams end with this sentinel, not an event
+        self.wfile.flush()
 
     # ---------------- Gemini
     def gemini(self, b, step, stream):
+        """Gemini generateContent. Streaming sends the whole answer as one SSE data chunk without an event name."""
         if "tool" in step:
             part = {"functionCall": {"name": step["tool"], "args": step["input"]}}
         else:
@@ -180,4 +200,5 @@ class H(BaseHTTPRequestHandler):
         self._sse_start()
         self._sse(None, resp)
 
-ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()
+if __name__ == "__main__":
+    ThreadingHTTPServer(("127.0.0.1", PORT), MockHandler).serve_forever()
