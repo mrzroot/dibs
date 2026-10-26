@@ -1,52 +1,88 @@
-import sys; sys.path.insert(0, __import__("os").path.dirname(__import__("os").path.abspath(__file__)))
-from lib import *
-R = "/tmp/e2e-gemini"; newrepo(R)
-sh("dibs init --agents gemini", cwd=R, quiet=True)
-sh("git add -A && git commit -qm 'dibs init'", cwd=R)
-shutil.rmtree('/tmp/gm-home', ignore_errors=True); os.makedirs('/tmp/gm-home/.gemini')
-json.dump({"security": {"auth": {"selectedType": "gemini-api-key"}}}, open('/tmp/gm-home/.gemini/settings.json', 'w'))
-TRUST = sys.argv[1:] != ["notrust"]
-if TRUST: json.dump({R: "TRUST_FOLDER"}, open('/tmp/gm-home/.gemini/trustedFolders.json', 'w'))
-E = dict(ENV, GEMINI_CLI_HOME='/tmp/gm-home', GOOGLE_GEMINI_BASE_URL='http://127.0.0.1:18800', GEMINI_API_KEY='x')
+"""End-to-end: real Gemini CLI against the mock model, with dibs hooks installed.
+
+Turns: (1) write_file creates api.py; the human edits a line by hand; (2) write_file from stale memory, which
+BeforeTool must deny; (3) a `replace` that keeps the human line is allowed; (4) a `replace` that reverts it is blocked;
+(5) a run_shell_command `sed` revert is noticed afterwards (AfterTool note) until `dibs restore`.
+Pass `notrust` to leave the folder out of trustedFolders.json.
+"""
+import json
+import os
+import shutil
+import sys
+
+from lib import (
+    AGENT_LINE, ENV, HUMAN, MOCK_URL, SED_REVERT, V1, V2,
+    all_text, clear_log, finish, human_edit, ok, read_file, script, setup_repo, sh, show, tool_results,
+)
+
+REPO = "/tmp/e2e-gemini"
+GEMINI_HOME = "/tmp/gm-home"
+TRUST_FOLDER = sys.argv[1:] != ["notrust"]
+
+setup_repo(REPO, "gemini", quiet=True)
+
+shutil.rmtree(GEMINI_HOME, ignore_errors=True)
+os.makedirs(f"{GEMINI_HOME}/.gemini")
+with open(f"{GEMINI_HOME}/.gemini/settings.json", "w") as fh:
+    json.dump({"security": {"auth": {"selectedType": "gemini-api-key"}}}, fh)
+if TRUST_FOLDER:
+    with open(f"{GEMINI_HOME}/.gemini/trustedFolders.json", "w") as fh:
+        json.dump({REPO: "TRUST_FOLDER"}, fh)
+
+GEMINI_ENV = dict(ENV, GEMINI_CLI_HOME=GEMINI_HOME, GOOGLE_GEMINI_BASE_URL=MOCK_URL, GEMINI_API_KEY="x")
+
+
 def gemini(prompt):
-    r = sh(['gemini', '-p', prompt, '--yolo', '-m', 'gemini-2.5-pro'], cwd=R, env=E, quiet=True)
-    print("  out:", r.stdout.strip()[-200:]); return r
+    """One non-interactive `gemini -p` turn in REPO (--yolo: no tool confirmation prompts)."""
+    result = sh(["gemini", "-p", prompt, "--yolo", "-m", "gemini-2.5-pro"], cwd=REPO, env=GEMINI_ENV, quiet=True)
+    print("  out:", result.stdout.strip()[-200:])
+    return result
+
+
+def replace_step(old, new, instruction):
+    """A step that calls Gemini's `replace` tool (exact old_string -> new_string inside one file)."""
+    return {"tool": "replace", "input": {
+        "file_path": f"{REPO}/api.py", "old_string": old, "new_string": new, "instruction": instruction,
+    }}
+
+
 clear_log()
 print("== turn 1: gemini write_file")
-script([{"tool": "write_file", "input": {"file_path": f"{R}/api.py", "content": V1}}, {"text": "created"}])
+script([{"tool": "write_file", "input": {"file_path": f"{REPO}/api.py", "content": V1}}, {"text": "created"}])
 gemini("create api.py")
-ok(os.path.exists(f"{R}/api.py") and open(f"{R}/api.py").read() == V1, "gemini write_file created api.py")
-print("== human edits"); human_edit(R)
+ok(read_file(REPO) == V1, "gemini write_file created api.py")
+
+print("== human edits")
+human_edit(REPO)
+
 clear_log()
 print("== turn 2: gemini rewrites from memory with write_file")
-script([{"tool": "write_file", "input": {"file_path": f"{R}/api.py", "content": V2}}, {"text": "added logging"}])
+script([{"tool": "write_file", "input": {"file_path": f"{REPO}/api.py", "content": V2}}, {"text": "added logging"}])
 gemini("add logging")
-txt = all_text()
-ok("Since your last turn" in txt and "timeout=30" in txt, "BeforeAgent brief reached the model")
-tr = tool_results(); print("tool results:", [t[:300] for t in tr])
-ok(any("would undo changes the human made" in t for t in tr), "BeforeTool deny reason reached the model")
-ok(HUMAN in open(f"{R}/api.py").read(), "human line survived write_file")
+ok("Since your last turn" in all_text() and "timeout=30" in all_text(), "BeforeAgent brief reached the model")
+results = tool_results()
+print("tool results:", [t[:300] for t in results])
+ok(any("would undo changes the human made" in t for t in results), "BeforeTool deny reason reached the model")
+ok(HUMAN in read_file(REPO), "human line survived write_file")
+
 clear_log()
 print("== turn 3: gemini replace that builds on the human line")
-script([{"tool": "replace", "input": {"file_path": f"{R}/api.py", "old_string": "import requests\n", "new_string": "import logging\nimport requests\n", "instruction": "add import"}}, {"text": "ok"}])
+script([replace_step("import requests\n", "import logging\nimport requests\n", "add import"), {"text": "ok"}])
 gemini("add import")
-s = open(f"{R}/api.py").read()
-ok(s.startswith("import logging") and HUMAN in s, "non-reverting replace allowed")
+ok(read_file(REPO).startswith("import logging") and HUMAN in read_file(REPO), "non-reverting replace allowed")
+
 clear_log()
 print("== turn 4: gemini replace that reverts")
-script([{"tool": "replace", "input": {"file_path": f"{R}/api.py", "old_string": HUMAN, "new_string": "    r = requests.get(url, timeout=10)", "instruction": "reset"}}, {"text": "ok"}])
+script([replace_step(HUMAN, AGENT_LINE, "reset"), {"text": "ok"}])
 gemini("reset timeout")
-ok(HUMAN in open(f"{R}/api.py").read(), "reverting replace blocked")
+ok(HUMAN in read_file(REPO), "reverting replace blocked")
+
 clear_log()
 print("== turn 5: gemini reverts via run_shell_command")
-script([{"tool": "run_shell_command", "input": {"command": "sed -i 's/timeout=30, verify=\"ca.pem\")/timeout=10)/' api.py", "description": "reset"}}, {"text": "reset"}])
+script([{"tool": "run_shell_command", "input": {"command": SED_REVERT, "description": "reset"}}, {"text": "reset"}])
 gemini("reset timeout via shell")
-show(R)
-txt = all_text()
-ok("undid lines the human edited" in txt, "AfterTool revert note reached the model")
-sh("dibs restore api.py", cwd=R)
-s = open(f"{R}/api.py").read()
-ok(HUMAN in s and s.startswith("import logging"), "restore put back the human line")
-sh("NO_COLOR=1 dibs log -n 20", cwd=R)
-sh("cat .git/dibs/hook-errors.log", cwd=R)
-print("RESULTS", sum(r for _, r in RESULTS), "/", len(RESULTS))
+show(REPO)
+ok("undid lines the human edited" in all_text(), "AfterTool revert note reached the model")
+sh("dibs restore api.py", cwd=REPO)
+ok(HUMAN in read_file(REPO) and read_file(REPO).startswith("import logging"), "restore put back the human line")
+finish(REPO)
