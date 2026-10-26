@@ -1,4 +1,4 @@
-"""Tests for the 0.1.1 hardening: payloads taken from the real CLIs, doctor, lock, watch, run."""
+"""Hardening tests: hook payloads taken from the real agent CLIs, `dibs doctor`, the repo lock, `dibs watch` and `dibs run`."""
 import json
 import os
 import subprocess
