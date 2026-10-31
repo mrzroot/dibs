@@ -109,7 +109,7 @@ html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme
         <span class="tab tab-ai" data-i="mem_tab">agent memory</span>
         <span class="pane-who" data-i="pane_ai">what it thinks api.py says</span>
       </div>
-      <pre class="mem" id="mem" aria-label="Agent memory of api.py"></pre>
+      <pre class="mem" id="mem" tabindex="0" aria-label="Agent memory of api.py"></pre>
       <div class="log" id="log" role="log" aria-live="polite" aria-label="Agent session"></div>
     </div>
   </div>
@@ -136,7 +136,7 @@ html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme
   <div class="split beat">
     <div class="side you"><span class="n">01</span><h3 data-i="b1y_h">You edit by hand</h3><p data-i="b1y">Between turns you change <code>timeout=10</code> to <code>timeout=30</code>. dibs records it as yours — with the lines, the time, and the file.</p></div>
     <div class="seam"></div>
-    <div class="side ai"><h3 data-i="b1a_h">The agent gets a brief</h3><pre class="term">[dibs] Since your last turn these files were
+    <div class="side ai"><h3 data-i="b1a_h">The agent gets a brief</h3><pre class="term" tabindex="0">[dibs] Since your last turn these files were
 changed outside your session — by the human, by hand.
 • api.py — edited by human (+1 −1, 2m ago)
     - r = requests.get(url, timeout=10)
@@ -145,7 +145,7 @@ changed outside your session — by the human, by hand.
   <div class="split beat">
     <div class="side you"><span class="n">02</span><h3 data-i="b2y_h">It tries anyway</h3><p data-i="b2y">Before any edit runs, dibs checks whether it removes lines you added or brings back lines you deleted. Claude Code asks you; Codex, Gemini and Cursor get a denial that names your lines.</p></div>
     <div class="seam"></div>
-    <div class="side ai"><h3 data-i="b2a_h">The edit bounces</h3><pre class="term">dibs: this edit to api.py would undo changes the
+    <div class="side ai"><h3 data-i="b2a_h">The edit bounces</h3><pre class="term" tabindex="0">dibs: this edit to api.py would undo changes the
 human made by hand.
 It removes lines the human added or changed:
   + r = requests.get(url, timeout=30)
@@ -155,7 +155,7 @@ around it.</pre></div>
   <div class="split beat">
     <div class="side you"><span class="n">03</span><h3 data-i="b3y_h">Something slipped through?</h3><p data-i="b3y">A <code>sed</code> in a shell command, or an agent with no hooks. dibs sees it right after, tells the agent, blocks the commit, and puts back only your lines.</p></div>
     <div class="seam"></div>
-    <div class="side ai"><h3 data-i="b3a_h">Your lines come back</h3><pre class="term">$ git commit -m "add logging"
+    <div class="side ai"><h3 data-i="b3a_h">Your lines come back</h3><pre class="term" tabindex="0">$ git commit -m "add logging"
 dibs: this commit contains files where an AI agent
 undid lines you edited by hand:
   #7 api.py (claude): r = requests.get(url, timeout=30)
@@ -189,7 +189,7 @@ $ dibs restore api.py
   </div>
   <div class="seam"></div>
   <div class="side ai">
-<pre class="term term-big"><span class="c"># install (not on PyPI yet)</span>
+<pre class="term term-big" tabindex="0"><span class="c"># install (not on PyPI yet)</span>
 pipx install git+https://github.com/mrzroot/dibs@v0.1.1
 
 <span class="c"># in each repo</span>

@@ -70,7 +70,7 @@
     html.lang = lang; html.dir = lang === "fa" ? "rtl" : "ltr";
     $$("[data-i]").forEach(el => { const v = t(el.dataset.i); if (v != null) el.innerHTML = v; });
     $("#lang").textContent = lang === "fa" ? "EN" : "فا";
-    $("#lang").setAttribute("aria-label", lang === "fa" ? "Switch to English" : "تغییر به فارسی");
+    $("#lang").setAttribute("aria-label", lang === "fa" ? "EN — Switch to English" : "فا — تغییر به فارسی");
     $("#log").dataset.empty = t("log_empty");
     const heads = $$(".tbl thead th").map(th => th.textContent);
     $$(".tbl tbody tr").forEach(tr => { let c = 0; $$("th,td", tr).forEach(cell => { if (cell.tagName === "TD") cell.dataset.l = cell.colSpan > 1 ? "" : heads[c] || ""; c += cell.colSpan || 1; }); });
