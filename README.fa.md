@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/banner.svg" alt="dibs: call dibs on your edits" width="100%"></p>
+
 <div dir="rtl">
 
 # dibs

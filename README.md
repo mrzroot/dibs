@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/banner.svg" alt="dibs: call dibs on your edits" width="100%">
+
 # dibs
 
 **Call dibs on your edits.** Stop AI coding agents (Claude Code, Codex, Gemini CLI, Cursor, Copilot,
