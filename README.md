@@ -222,6 +222,12 @@ pip install -e . pytest
 pytest -q
 ```
 
+## Contributing
+
+Bug reports, ideas and pull requests are welcome, in English or Persian. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md) (setup, where the code lives, how to test) and the
+[issue forms](https://github.com/mrzroot/dibs/issues/new/choose). Release history is in [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 MIT © Mohammadreza Zare ([mrzroot](https://github.com/mrzroot))
