@@ -62,7 +62,7 @@
   const params = new URLSearchParams(location.search);
   let lang = params.get("lang") === "fa" || params.get("lang") === "en" ? params.get("lang") : null;
   try { lang = lang || localStorage.getItem("dibs-lang"); } catch (e) { /* storage blocked */ }
-  if (lang !== "fa") lang = "en";
+  if (lang !== "en") lang = "fa"; /* Persian first */
   const t = k => (lang === "fa" ? FA[k] : EN[k]) ?? EN[k] ?? k;
 
   function applyLang() {
