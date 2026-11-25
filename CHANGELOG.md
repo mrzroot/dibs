@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added a bilingual project walkthrough with a practical, reproducible first-use workflow. Documentation only; no runtime changes.
+
 ## v0.1.1 (2026-10-09)
 
 Tested end to end against the real Claude Code 2.1.295, Codex 0.162.0, Gemini CLI 0.63.0 and aider

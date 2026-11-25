@@ -18,6 +18,10 @@ aider) from reverting what you changed by hand, and see what is not committed or
 
 <a href="https://mrzroot.github.io/dibs/"><img src="docs/demo.gif" alt="dibs demo: you change a line, the agent tries to rewrite the file from memory, dibs blocks it and the agent keeps your line" width="860"></a>
 
+
+
+[Project walkthrough · راهنمای عملی پروژه](docs/project-guide.html)
+
 </div>
 
 ### ⚡ Quickstart

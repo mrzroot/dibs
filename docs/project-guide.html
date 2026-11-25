@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="See and recover a human edit without discarding unrelated agent changes.">
+<title>dibs · Project guide / راهنمای پروژه</title>
+<style>
+:root{--ink:#202638;--brand:#3b2976;--pastel:#e0d2ff;font:1rem/1.6 system-ui,sans-serif;color:var(--ink);background:#f7f9fc}
+*{box-sizing:border-box}body{margin:0}a{color:inherit}a:focus-visible,pre:focus-visible{outline:3px solid #3569e2;outline-offset:4px}
+header{background:var(--brand);color:#fff;padding:2.5rem max(1.25rem,calc((100vw - 65rem)/2));border-bottom:.45rem solid var(--pastel)}
+header h1{font-size:clamp(2rem,8vw,4rem);margin:0;overflow-wrap:anywhere;line-height:1.15}header p{color:var(--pastel);margin:.45rem 0 1rem;font-size:1.1rem}
+nav{display:flex;flex-wrap:wrap;gap:.6rem 1rem}nav a{padding:.2rem .65rem;border:1px solid currentColor;border-radius:999px;text-decoration:none}
+nav a:hover{background:var(--pastel);color:var(--brand)}
+main{width:min(65rem,100% - 2.5rem);margin:2.5rem auto}section+section{margin-top:3rem}.intro span{font-size:.8rem;font-weight:700;color:var(--brand)}
+h2{font-size:clamp(1.4rem,4vw,2rem);line-height:1.3;margin:.25rem 0 1rem}.steps{padding:0;margin:0;display:grid;gap:.85rem;list-style:none;counter-reset:steps}
+.steps li{background:#fff;border:1px solid #d9e0ec;border-inline-start:5px solid var(--brand);border-radius:.75rem;padding:1rem 1.15rem;counter-increment:steps;min-width:0}
+h3{margin:0;line-height:1.3;font-size:1.1rem}h3::before{content:counter(steps);display:inline-grid;place-items:center;margin-inline-end:.5rem;background:var(--pastel);color:var(--brand);border-radius:50%;width:1.8rem;height:1.8rem}
+p{margin:.55rem 0}pre{overflow:auto;white-space:pre;font-size:.87rem;border-radius:.4rem;background:#202638;color:#fff;padding:.75rem;margin:.75rem 0 0}
+footer{padding:1.25rem;text-align:center;color:var(--brand);border-top:1px solid #d9e0ec}
+@media(min-width:52rem){.steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body><header><h1>dibs</h1><p lang="fa" dir="rtl" style="text-align:left">Dibs · راهنمای پروژه</p>
+<nav aria-label="Page links"><a href="#en">English</a><a href="#fa" lang="fa">فارسی</a><a href="https://github.com/mrzroot/dibs">Source on GitHub</a><a href="https://github.com/mrzroot/dibs/releases">Releases</a><a href="./index.html">Project home</a></nav>
+</header><main><section id="en" lang="en" dir="ltr" aria-labelledby="title-en">
+<div class="intro"><span>PROJECT WALKTHROUGH</span><h2 id="title-en">See and recover a human edit without discarding unrelated agent changes.</h2></div>
+<ol class="steps"><li><h3>Check the integration first</h3><p>Use a disposable Git checkout. Run init for your agent, then inspect which hooks are active; hook support varies by tool.</p><pre dir="ltr" tabindex="0"><code>dibs init
+dibs doctor</code></pre></li>
+<li><h3>Inspect what changed</h3><p>Change a line by hand, then ask the agent to make an unrelated edit. Look for attributed edits and reverts rather than assuming every shell edit was blocked.</p><pre dir="ltr" tabindex="0"><code>dibs status</code></pre></li>
+<li><h3>Preview before restoring</h3><p>Check which lines would be recovered. Apply the restore only after reviewing that preview; --whole is not necessary for recovering individual edits.</p><pre dir="ltr" tabindex="0"><code>dibs restore app.py --dry-run</code></pre></li></ol>
+</section>
+<section id="fa" lang="fa" dir="rtl" aria-labelledby="title-fa">
+<div class="intro"><span>راهنمای عملی پروژه</span><h2 id="title-fa">ویرایش خودتان را بدون حذف تغییرهای نامرتبط دستیار بررسی و بازیابی کنید.</h2></div>
+<ol class="steps"><li><h3>اول بررسی اتصال</h3><p>در یک نسخهٔ آزمایشی مخزن، اتصال ابزار را بررسی کنید؛ پشتیبانی قلاب‌ها در دستیارهای مختلف یکسان نیست.</p><pre dir="ltr" tabindex="0"><code>dibs init
+dibs doctor</code></pre></li>
+<li><h3>مشاهدهٔ تغییرها</h3><p>یک خط را دستی تغییر دهید و از دستیار بخواهید تغییر دیگری انجام دهد؛ انتساب و گزارش بازگردانی را بررسی کنید.</p><pre dir="ltr" tabindex="0"><code>dibs status</code></pre></li>
+<li><h3>پیش‌نمایش بازیابی</h3><p>اول مشخص کنید کدام خط‌ها برمی‌گردند؛ برای چند خط نیازی به بازگردانی کل فایل نیست.</p><pre dir="ltr" tabindex="0"><code>dibs restore app.py --dry-run</code></pre></li></ol>
+</section></main>
+<footer>Review guide · not a release / <span lang="fa" dir="rtl">راهنمای بازبینی؛ نه نسخهٔ منتشرشده</span></footer></body></html>
