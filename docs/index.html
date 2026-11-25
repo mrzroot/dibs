@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html data-portfolio-design="dibs" lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#070b1a" media="(prefers-color-scheme: dark)">
@@ -15,8 +15,6 @@
 <meta property="og:url" content="https://mrzroot.github.io/dibs/">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="preload" href="fonts/dela.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/jbmono.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="site.css">
 <style id="mrz-theme-css">/*mrz-theme-badge*/[data-theme-toggle]{position:relative}
 html[data-theme-mode=system] [data-theme-toggle]::after{content:"A";position:absolute;inset-inline-end:-3px;bottom:-3px;min-width:13px;height:13px;padding:0 2px;box-sizing:border-box;border-radius:7px;font:700 8px/13px system-ui,sans-serif;letter-spacing:0;text-align:center;background:#14181f;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.55);pointer-events:none}
@@ -38,6 +36,7 @@ html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme
 </style>
 <link rel="stylesheet" href="identity.css"><link rel="stylesheet" href="mx.css">
 <style id="mx-tokens">:root{--mx-acc:#2a1a8c;--mx-on-acc:#fff;--mx-fg:var(--on-seam);--mx-mut:var(--on-seam2);--mx-card:var(--seam-chip);--mx-line:var(--seam-line);--mx-mono:var(--mono)}html[data-theme=dark]{--mx-acc:#f0be5e;--mx-on-acc:#1a1200}@media (prefers-color-scheme:dark){html:not([data-theme]){--mx-acc:#f0be5e;--mx-on-acc:#1a1200}}.mx-sec>h2{font-family:var(--disp)}</style>
+<link rel="stylesheet" href="portfolio-reframe.css">
 </head>
 <body>
 <a class="skip" href="#arena" data-i="skip">Skip to the demo</a>
@@ -55,6 +54,20 @@ html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme
 </header>
 
 <main>
+
+<!-- Portfolio design: localized overview; original project sections remain below. -->
+<aside class="rr-signal">
+  <div class="rr-annotation"><p class="rr-product"><bdi>dibs</bdi><span><span class="rr-en" lang="en">Editing guard</span><span class="rr-fa" lang="fa">محافظ ویرایش</span></span></p>
+    <p class="rr-promise"><span class="rr-en" lang="en">Keep the line you changed on purpose</span><span class="rr-fa" lang="fa">خطی را که خودتان تغییر دادید حفظ کنید</span></p>
+    <a class="rr-start" href="#arena"><span class="rr-en" lang="en">Try the edit arena</span><span class="rr-fa" lang="fa">میدان ویرایش را امتحان کنید</span> <span aria-hidden="true">↓</span></a>
+  </div>
+  <div class="rr-visual" aria-hidden="true">
+    <svg viewBox="0 0 360 100" width="360" height="100" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M65 12h226v76H65zM65 34h226"/><path d="M74 23h3m6 0h3m6 0h3"/><rect x="83" y="49" width="174" height="25" rx="4" fill="currentColor" opacity=".23"/><path d="M98 61h11m-5-5v10m18-5h81M122 42h104m-104 39h76"/><path d="m251 62 6 6 13-14"/>
+    </svg>
+    <div class="rr-steps"><span><span class="rr-en" lang="en">Edit</span><span class="rr-fa" lang="fa">ویرایش</span></span><span><span class="rr-en" lang="en">Attribute</span><span class="rr-fa" lang="fa">انتساب</span></span><span><span class="rr-en" lang="en">Review</span><span class="rr-fa" lang="fa">بازبینی</span></span></div>
+  </div>
+</aside>
 <section class="hero split" aria-labelledby="h1">
   <div class="side you">
     <p class="who"><span class="dot"></span><span data-i="who_you">You</span></p>
@@ -247,3 +260,4 @@ if(window.MutationObserver)new MutationObserver(sync).observe(d,{attributes:true
 <script src="fx.js" defer></script><script src="mx.js" defer></script>
 </body>
 </html>
+
