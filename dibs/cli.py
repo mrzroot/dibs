@@ -360,6 +360,49 @@ def cmd_doctor(a: argparse.Namespace) -> int:
     return 1 if any(l == "fail" for l, _ in checks) else 0
 
 
+def cmd_summary(a: argparse.Namespace) -> int:
+    d = Dibs()
+    d.ensure()
+    st0 = d.load_state()
+    d.record(d._pending_actor(st0, None))
+    st = d.load_state()
+    s = sync_status(d.repo)
+    evs = [e for e in d.events() if e.get("kind") == "change"]
+    reverts = d.pending_reverts()
+    by_actor = {}
+    for e in evs:
+        by_actor[e["actor"]] = by_actor.get(e["actor"], 0) + 1
+    human_events = sum(n for act, n in by_actor.items() if act in HUMANISH)
+    agent_events = sum(n for act, n in by_actor.items() if act not in HUMANISH)
+    unseen_by_agent = {}
+    for name, ag in st["agents"].items():
+        unseen = sorted({e["path"] for e in evs if e["seq"] > ag.get("seen_seq", 0) and e["actor"] in HUMANISH})
+        if unseen:
+            unseen_by_agent[name] = unseen
+    payload = {
+        "version": __version__,
+        "root": str(d.repo.root),
+        "branch": s.get("branch"),
+        "events_total": len(evs),
+        "human_events": human_events,
+        "agent_events": agent_events,
+        "by_actor": by_actor,
+        "unseen_human_files": unseen_by_agent,
+        "pending_reverts": len(reverts),
+        "sync_warnings": len(s.get("warnings", [])),
+    }
+    if a.json:
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+    else:
+        print(f"dibs {__version__} · {d.repo.root} ({payload['branch'] or 'no branch'})")
+        print(f"  events: {payload['events_total']} total ({human_events} human, {agent_events} agent)")
+        print(f"  pending reverts: {payload['pending_reverts']} · sync warnings: {payload['sync_warnings']}")
+        if unseen_by_agent:
+            for ag_name, files in sorted(unseen_by_agent.items()):
+                print(f"  unseen by {ag_name}: {', '.join(files)}")
+    return 0
+
+
 def cmd_hook(a: argparse.Namespace) -> int:
     from .hooks import main as hook_main
     raw = sys.stdin.buffer.read() if hasattr(sys.stdin, "buffer") else sys.stdin.read().encode()
@@ -515,6 +558,10 @@ def parser() -> argparse.ArgumentParser:
     s = sub.add_parser("doctor", help="check that each agent will really run the dibs hooks")
     s.add_argument("--json", action="store_true")
     s.set_defaults(fn=cmd_doctor)
+
+    s = sub.add_parser("summary", help="compact handoff summary of human/agent edits, reverts, and sync state")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(fn=cmd_summary)
 
     s = sub.add_parser("hook", help="entry point for agent hooks (reads JSON on stdin)")
     s.add_argument("tool", choices=["claude", "codex", "cursor", "gemini"])

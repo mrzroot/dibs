@@ -93,6 +93,7 @@ dibs brief / done      شروع و پایان نوبت برای ایجنت‌ه�
 dibs run --agent A -- CMD    اجرای یک جلسهٔ کامل ایجنت به‌عنوان یک نوبت
 dibs watch             ثبت پیوستهٔ ویرایش‌های شما با زمان دقیق
 dibs doctor            بررسی اینکه هر ایجنت واقعاً هوک‌ها را اجرا می‌کند
+dibs summary [--json]  خلاصهٔ آمار ویرایش انسان/ایجنت، فایل‌های دیده نشده و هشدارها
 dibs mcp               سرور MCP
 dibs config guard warn       حالت نگهبان: auto | ask | deny | warn | off
 ```

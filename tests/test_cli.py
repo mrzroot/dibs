@@ -99,7 +99,20 @@ def test_guard_cli_and_config(repo):
     edit(repo / "app.py", "timeout = 10", "timeout = 30")
     run("record", cwd=repo)
     r = run("guard", "app.py", "--new", "-", cwd=repo, input="def f():\n    timeout = 10\n    return timeout\n")
-    assert r.returncode == 1 and "would undo" in r.stdout
+    assert r.returncode == 1
+
+
+def test_summary_json_and_text(repo):
+    run("init", "--agents", "claude", cwd=repo)
+    edit(repo / "README.md", "# demo", "# human edit")
+    r_json = run("summary", "--json", cwd=repo)
+    assert r_json.returncode == 0
+    data = json.loads(r_json.stdout)
+    assert data["human_events"] >= 1
+    assert "pending_reverts" in data
+    assert "sync_warnings" in data
+    r_txt = run("summary", cwd=repo)
+    assert r_txt.returncode == 0 and "pending reverts:" in r_txt.stdout and "would undo" in r.stdout
     assert run("config", "guard", "warn", cwd=repo).returncode == 0
     assert run("config", "guard", cwd=repo).stdout.strip() == "warn"
 
@@ -118,3 +131,16 @@ def test_uncommitted_work_before_dibs_is_protected(repo):
     assert "notes.txt — created by someone" in r.stdout
     r = run("guard", "app.py", "--new", "-", cwd=repo, input="def f():\n    timeout = 10\n    return timeout\n")
     assert r.returncode == 1
+
+
+def test_summary_json_and_text(repo):
+    run("init", "--agents", "claude", cwd=repo)
+    edit(repo / "README.md", "# demo", "# human edit")
+    r_json = run("summary", "--json", cwd=repo)
+    assert r_json.returncode == 0
+    data = json.loads(r_json.stdout)
+    assert data["human_events"] >= 1
+    assert "pending_reverts" in data
+    assert "sync_warnings" in data
+    r_txt = run("summary", cwd=repo)
+    assert r_txt.returncode == 0 and "pending reverts:" in r_txt.stdout

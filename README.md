@@ -129,6 +129,7 @@ dibs done --agent A              end that turn and attribute its changes
 dibs run --agent A -- CMD …      run a whole agent session as one turn
 dibs watch [--interval 2]        record your edits continuously, with exact timestamps
 dibs doctor [--json]             check that every wired agent will really run the hooks
+dibs summary [--json]            compact human/agent handoff & revert count summary
 dibs record [FILES] [--actor A]  attribute current changes now
 dibs mcp [--agent A]             MCP server on stdio
 dibs guard FILE --new NEWFILE    check a proposed version from scripts

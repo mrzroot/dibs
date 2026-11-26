@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.0 (2026-11-26)
+
+- Added `dibs summary [--json]` for compact human/agent handoff reporting (event counts by actor, unseen human files per agent, pending reverts, and sync warning counts).
+
 ## v0.1.1 (2026-10-09)
 
 Tested end to end against the real Claude Code 2.1.295, Codex 0.162.0, Gemini CLI 0.63.0 and aider
