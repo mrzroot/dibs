@@ -37,7 +37,7 @@ html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme
 <link rel="stylesheet" href="identity.css"><link rel="stylesheet" href="mx.css">
 <style id="mx-tokens">:root{--mx-acc:#2a1a8c;--mx-on-acc:#fff;--mx-fg:var(--on-seam);--mx-mut:var(--on-seam2);--mx-card:var(--seam-chip);--mx-line:var(--seam-line);--mx-mono:var(--mono)}html[data-theme=dark]{--mx-acc:#f0be5e;--mx-on-acc:#1a1200}@media (prefers-color-scheme:dark){html:not([data-theme]){--mx-acc:#f0be5e;--mx-on-acc:#1a1200}}.mx-sec>h2{font-family:var(--disp)}</style>
 <link rel="stylesheet" href="portfolio-reframe.css">
-<link rel="stylesheet" href="/assets/studio-mark.css"></head>
+<link rel="stylesheet" href="/assets/studio-mark.css"><link rel="stylesheet" href="/assets/portfolio/embed.css"><script defer src="/assets/portfolio/exhibit.js"></script></head>
 <body>
 <a class="skip" href="#arena" data-i="skip">Skip to the demo</a>
 
@@ -79,11 +79,32 @@ html[data-theme=dark] .pitch .btn:not(.btn-line):not(.btn-stamp),html[data-theme
     <p class="big" data-i="hero_ai">It rewrote the file from memory.</p>
   </div>
 </section>
-<aside class="studio-project-entry" style="--entry-color:#ffd894">
-  <img src="/assets/thumbs/dibs.webp" alt="" width="160" height="100" loading="lazy" decoding="async">
-  <div><strong>Keep the handwritten part</strong><small>Review the affected range</small></div>
-  <a href="/playground/?project=dibs&amp;lang=en">Try the case ↗</a>
-</aside>
+<div class="atlas-embedded" data-motif="terminal" style="--exhibit-hue:46"><section class="exhibit-studio" id="portfolio-example" data-project="dibs" data-motif="terminal" data-state="0" aria-labelledby="portfolio-example-title">
+    <div class="exhibit-studio-head"><div><p class="exhibit-kicker"><span class="pf-en" lang="en">Illustrative sample</span><span class="pf-fa" lang="fa">دادهٔ نمونه</span></p><h2 id="portfolio-example-title"><span class="pf-en" lang="en">Switch the terminal state</span><span class="pf-fa" lang="fa">وضعیت ترمینال را عوض کن</span></h2></div>
+       <a href="/projects/guide/dibs/"><span class="pf-en" lang="en">Interactive introduction</span><span class="pf-fa" lang="fa">معرفی تعاملی</span> <i class="exhibit-arrow" aria-hidden="true"></i></a></div>
+    <div class="exhibit-lab">
+      <div class="stage-picture" aria-hidden="true">
+        <div class="stage-sign"><i></i><i></i><i></i><strong dir="ltr">dibs</strong></div>
+
+        <div class="stage-track" dir="ltr"></div>
+        <div class="stage-evidence" dir="ltr"><span dir="auto">line 12 · hand edit</span><span dir="auto">lines 10–18 · assistant</span></div>
+      </div>
+      <div class="stage-work">
+        <p><span class="pf-en" lang="en">You made a small manual edit while an assistant proposed a larger replacement nearby.</span><span class="pf-fa" lang="fa">هم‌زمان با پیشنهاد تغییر بزرگ توسط دستیار، خودت یک بخش کوچک را دستی ویرایش کرده‌ای.</span></p>
+        <div class="stage-actions" role="group" aria-label="Example controls / کنترل‌های نمونه">
+          <button type="button" data-stage="1" aria-pressed="false"><span class="pf-en" lang="en">Review the affected range</span><span class="pf-fa" lang="fa">محدودهٔ درگیر را بازبینی کن</span><i class="exhibit-arrow" aria-hidden="true"></i></button><button type="button" data-stage="2" aria-pressed="false"><span class="pf-en" lang="en">Apply the whole replacement</span><span class="pf-fa" lang="fa">کل جایگزینی را اعمال کن</span><i class="exhibit-arrow" aria-hidden="true"></i></button>
+        </div>
+        <output class="stage-result" aria-live="polite"><span class="pf-en" lang="en">Try a response to see its effect.</span><span class="pf-fa" lang="fa">یک کار را انتخاب کن و اثرش را ببین.</span></output>
+        <div class="stage-foot">
+          <button type="button" data-stage="0" aria-pressed="true"><span class="pf-en" lang="en">Reset example</span><span class="pf-fa" lang="fa">بازنشانی نمونه</span></button>
+
+        </div>
+      </div>
+    </div>
+   </section>
+    <p class="exhibit-takeaway"><span class="pf-en" lang="en">Use the smallest overlapping line range to review ownership before accepting a wider edit.</span><span class="pf-fa" lang="fa">قبل از پذیرش ویرایش وسیع، کوچک‌ترین محدودهٔ هم‌پوشان را بررسی کن تا ویرایش دستی مشخص بماند.</span></p>
+    <script type="application/json" data-embed-project>{"entries":[{"id":"dibs","group":"agents","motif":"terminal","color":"#ffd894","title":["Keep the handwritten part","بخش دست‌نویس را حفظ کن"],"brief":["You made a small manual edit while an assistant proposed a larger replacement nearby.","هم‌زمان با پیشنهاد تغییر بزرگ توسط دستیار، خودت یک بخش کوچک را دستی ویرایش کرده‌ای."],"actions":[["Review the affected range","محدودهٔ درگیر را بازبینی کن"],["Apply the whole replacement","کل جایگزینی را اعمال کن"]],"outcomes":[["The review surfaces the overlapping range before you choose which changes to keep.","بازبینی، هم‌پوشانی را پیش از انتخاب تغییرات نشان می‌دهد."],["The broad replacement would discard the manual edit in this example.","جایگزینی کامل در این نمونه ویرایش دستی را از بین می‌برد."]],"evidence":[["line 12 · hand edit","lines 10–18 · assistant"],["overlap · line 12","decision · review"],["replacement · 10–18","manual edit · lost"]],"name":"dibs","kicker":["AI pair-coding safety","ایمنی کدنویسی با هوش مصنوعی"],"intro":["Mark manual edits that a coding agent should keep, then review what changed with the guard and restore workflow.","ویرایش‌هایی را که ایجنت نباید برگرداند مشخص کنید و با محافظ و مسیر بازیابی بررسی کنید چه چیزی تغییر کرده است."],"hint":["Use a disposable branch, mark one manual change, then compare what a restore would do before applying it.","در شاخهٔ آزمایشی یک ویرایش دستی را علامت بزنید و پیش از بازیابی، نتیجهٔ پیشنهادی را بررسی کنید."],"site":"/dibs/","source":"https://github.com/mrzroot/dibs","layout":"editor","hue":46,"image":"/assets/thumbs/dibs.webp"}],"labels":{"map":["Project Atlas","اطلس پروژه‌ها"],"mapIntro":["Four ways to explore the projects. Choose a project to see what it does and open its interactive introduction.","چهار مسیر برای گشتن میان پروژه‌ها. یکی را انتخاب کن تا ببینی چه کار می‌کند و معرفی تعاملی‌اش را باز کنی."],"agents":["AI tooling","ابزارهای هوش مصنوعی"],"language":["Language and data","زبان و داده"],"systems":["Systems","سامانه‌ها"],"showcase":["Design and demos","طراحی و دمو"],"projects":["All projects","همهٔ پروژه‌ها"],"open":["Interactive introduction","معرفی تعاملی"],"test":["Try the example","نمونه را امتحان کن"],"story":["The situation","مسئله"],"reference":["Inspect the project","بررسی پروژه"],"source":["View source on GitHub","کد منبع در گیت‌هاب"],"demo":["Open project website","باز کردن سایت پروژه"],"guide":["Suggested first step","قدم اول پیشنهادی"],"sample":["Illustrative sample","دادهٔ نمونه"],"result":["What happens","نتیجه"],"choose":["Try a response to see its effect.","یک کار را انتخاب کن و اثرش را ببین."],"still":["Initial state","حالت اولیه"],"reset":["Reset example","بازنشانی نمونه"],"more":["Explore another project","یک پروژهٔ دیگر ببین"]}}</script>
+  </div>
 <section class="pitch">
   <h1 id="h1" data-i="h1">dibs stops AI coding agents from undoing what you typed.</h1>
   <p data-i="pitch">Agents don't see the edits you make between their turns, so they "fix" them back. dibs tells them what you changed, blocks the revert before it lands, and restores only your lines if one slips through.</p>
